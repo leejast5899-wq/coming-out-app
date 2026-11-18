@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>暖光 GlowOut — 同志出櫃陪伴與敘事轉譯 App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 隱私偽裝模式層 (一鍵偽裝為日常閱讀與生活筆記) -->
+  <div id="disguise-screen" class="disguise-screen hidden" aria-hidden="true">
+    <div class="disguise-container">
+      <header class="disguise-header">
+        <div>
+          <span class="disguise-badge">個人數位筆記</span>
+          <h1>日常閱讀與生活隨筆</h1>
+        </div>
+        <button id="exit-disguise-btn" class="btn-outline-sm" title="返回暖光 GlowOut (快捷鍵 Esc)">
+          返回原畫面
+        </button>
+      </header>
+      <div class="disguise-grid">
+        <article class="disguise-card">
+          <div class="disguise-date">2026-11-18 ・ 讀書心得</div>
+          <h2>《非暴力溝通》閱讀摘要</h2>
+          <p>在日常對話中，把「觀察」與「評論」分開，能大幅降低溝通雙方的防衛心理。試著先表達感受與需求，再提出具體可行的請求。</p>
+        </article>
+        <article class="disguise-card">
+          <div class="disguise-date">2026-11-15 ・ 電影筆記</div>
+          <h2>近期電影與影集觀看清單</h2>
+          <ul>
+            <li>《俗女養成記》第二季重溫 — 家庭關係的細膩描寫</li>
+            <li>《陽光普照》 — 關於家人間未能說出口的牽掛</li>
+            <li>週末去買咖啡豆、整理房間書架</li>
+          </ul>
+        </article>
+        <article class="disguise-card">
+          <div class="disguise-date">2026-11-12 ・ 待辦事項</div>
+          <h2>本週生活採買與行程</h2>
+          <p>1. 週四下午牙醫複診<br/>2. 繳交水電與網路費<br/>3. 準備簡報資料與圖表核對</p>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主應用程式外殼 -->
+  <div id="app-shell" class="app-shell">
+    <!-- 頂部導覽列 -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-orb" aria-hidden="true">
+            <span class="orb-glow"></span>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title-row">
+              <h1>暖光 GlowOut</h1>
+              <span class="tag-pill">Web App 原型</span>
+            </div>
+            <p class="brand-sub">資訊轉譯 × 敘事設計・出櫃陪伴與雙向溝通領航員</p>
+          </div>
+        </div>
+
+        <div class="topbar-controls">
+          <div class="mode-switch" role="tablist" aria-label="檢視模式切換">
+            <button id="btn-mode-app" class="mode-btn active" data-mode="app" role="tab" aria-selected="true">
+              📱 App 互動體驗
+            </button>
+            <button id="btn-mode-pm" class="mode-btn" data-mode="pm" role="tab" aria-selected="false">
+              📋 PM 企劃與理論架構
+            </button>
+          </div>
+
+          <button id="toggle-frame-btn" class="icon-pill-btn" title="切換手機框模擬視角 / 桌面寬版視角">
+            <span id="frame-btn-icon">📲</span>
+            <span id="frame-btn-label">手機視角</span>
+          </button>
+
+          <button id="privacy-disguise-btn" class="disguise-trigger-btn" title="一鍵偽裝成日常筆記 (也可按 Esc 鍵)">
+            🛡️ 隱私偽裝
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 視圖一：App 互動體驗 -->
+    <main id="view-app" class="main-container">
+      <div id="device-stage" class="device-stage">
+        <div id="device-frame" class="device-frame">
+          <!-- 手機模式狀態欄 (僅手機視角顯示) -->
+          <div class="mobile-notch-bar">
+            <span class="mobile-time">15:58</span>
+            <div class="mobile-notch"></div>
+            <span class="mobile-status">5G 🔋</span>
+          </div>
+
+          <!-- 頂部引導橫幅 -->
+          <section class="hero-strip">
+            <div class="hero-strip-content">
+              <span class="hero-kicker">化解出櫃「門把效應」・不孤單的溫柔準備</span>
+              <h2>把說不出口的緊張，轉譯為被理解的橋樑</h2>
+              <p>出櫃不是一場倉促的攤牌。先用日常微紀錄觀察關係氣象，再透過框架理論設計專屬敘事，讓愛走在恐懼之前。</p>
+            </div>
+            <div class="hero-quick-stats">
+              <div class="quick-stat">
+                <span class="qs-label">整體準備度</span>
+                <strong id="hero-readiness-score">--%</strong>
+              </div>
+              <div class="quick-stat">
+                <span class="qs-label">已記錄試水溫</span>
+                <strong id="hero-log-count">0 筆</strong>
+              </div>
+            </div>
+          </section>
+
+          <!-- App 分頁導覽列 -->
+          <nav class="app-nav" role="tablist" aria-label="功能模組導覽">
+            <button class="app-nav-btn active" data-tab="readiness" role="tab" aria-selected="true">
+              <span class="nav-ico">🌡️</span>
+              <span class="nav-txt">試水溫＆準備度</span>
+            </button>
+            <button class="app-nav-btn" data-tab="translator" role="tab" aria-selected="false">
+              <span class="nav-ico">✨</span>
+              <span class="nav-txt">敘事轉譯室</span>
+            </button>
+            <button class="app-nav-btn" data-tab="simulator" role="tab" aria-selected="false">
+              <span class="nav-ico">💬</span>
+              <span class="nav-txt">模擬演練室</span>
+            </button>
+            <button class="app-nav-btn" data-tab="family-pack" role="tab" aria-selected="false">
+              <span class="nav-ico">💌</span>
+              <span class="nav-txt">親友轉譯包</span>
+            </button>
+            <button class="app-nav-btn" data-tab="safety" role="tab" aria-selected="false">
+              <span class="nav-ico">🛟</span>
+              <span class="nav-txt">安心防護網</span>
+            </button>
+          </nav>
+
+          <!-- 分頁內容區 -->
+          <div class="tab-panels">
+            <!-- ============ 分頁 1：試水溫＆準備度 ============ -->
+            <section id="tab-readiness" class="tab-panel active">
+              <div class="panel-grid-2">
+                <!-- 左欄：四維度出櫃準備度自評 -->
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <span class="section-badge">Step 1・自我狀態盤點</span>
+                      <h3>出櫃準備度四維度自評</h3>
+                    </div>
+                    <span id="readiness-stage-pill" class="stage-pill">評估中</span>
+                  </div>
+                  <p class="card-desc">拖動滑桿檢視目前的心理與生活條件，確認自己是否具備安全緩衝，避免在高壓下衝動攤牌。</p>
+
+                  <div class="radar-wrap">
+                    <div id="readiness-radar-svg" class="radar-svg-box" aria-label="出櫃準備度四維度雷達圖"></div>
+                    <div class="readiness-summary-box">
+                      <div class="big-score">
+                        <span id="readiness-total-num">72</span><small>/ 100</small>
+                      </div>
+                      <div id="readiness-advice-title" class="advice-title">溫柔試探期</div>
+                      <p id="readiness-advice-desc" class="advice-desc"></p>
+                    </div>
+                  </div>
+
+                  <div class="sliders-list">
+                    <div class="slider-item">
+                      <div class="slider-label-row">
+                        <label for="slider-support">🤝 心理支持網（已知情且支持的朋友/伴侶）</label>
+                        <span class="slider-val" id="val-support">8</span>
+                      </div>
+                      <input type="range" id="slider-support" min="1" max="10" value="8" class="warm-range" />
+                    </div>
+
+                    <div class="slider-item">
+                      <div class="slider-label-row">
+                        <label for="slider-independence">🏡 經濟與居住獨立度（衝突時的退路空間）</label>
+                        <span class="slider-val" id="val-independence">7</span>
+                      </div>
+                      <input type="range" id="slider-independence" min="1" max="10" value="7" class="warm-range" />
+                    </div>
+
+                    <div class="slider-item">
+                      <div class="slider-label-row">
+                        <label for="slider-trust">☕ 與對象的日常關係安全感與溝通頻率</label>
+                        <span class="slider-val" id="val-trust">7</span>
+                      </div>
+                      <input type="range" id="slider-trust" min="1" max="10" value="7" class="warm-range" />
+                    </div>
+
+                    <div class="slider-item">
+                      <div class="slider-label-row">
+                        <label for="slider-emotion">🧘 自身情緒穩定度（承受消化期波動的餘裕）</label>
+                        <span class="slider-val" id="val-emotion">7</span>
+                      </div>
+                      <input type="range" id="slider-emotion" min="1" max="10" value="7" class="warm-range" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 右欄：平時「試水溫」微紀錄表單 -->
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <span class="section-badge">Step 2・化解門把效應</span>
+                      <h3>日常「試水溫」微紀錄</h3>
+                    </div>
+                    <button id="reset-demo-logs-btn" class="btn-ghost-xs" title="還原預設的示範紀錄">還原示範資料</button>
+                  </div>
+                  <p class="card-desc">如同看診前平時記錄症狀，先在日常聊天中丟出中性性別話題，長期累積對方反應溫度，告別臨門一腳的猜測與恐懼。</p>
+
+                  <form id="probe-log-form" class="probe-form">
+                    <div class="form-row-2">
+                      <div class="field">
+                        <label for="log-date">日期</label>
+                        <input type="date" id="log-date" required />
+                      </div>
+                      <div class="field">
+                        <label for="log-target">互動對象</label>
+                        <select id="log-target">
+                          <option value="媽媽">媽媽</option>
+                          <option value="爸爸">爸爸</option>
+                          <option value="手足">手足（兄姊弟妹）</option>
+                          <option value="摯友">摯友 / 室友</option>
+                          <option value="其他親友">其他親友</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-row-2">
+                      <div class="field">
+                        <label for="log-topic">觸發話題 / 媒介</label>
+                        <select id="log-topic">
+                          <option value="影視作品">影視作品（電影/台劇）</option>
+                          <option value="新聞時事">新聞時事 / 遊行報導</option>
+                          <option value="婚姻與家庭觀">婚姻 / 催婚 / 未來規劃</option>
+                          <option value="身邊朋友故事">提及身邊同志朋友故事</option>
+                          <option value="日常閒聊">日常家庭閒聊</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label>對方反應溫度（1排斥 → 5支持）</label>
+                        <div class="star-picker" id="star-picker" role="radiogroup" aria-label="反應溫度評分">
+                          <button type="button" class="star-btn" data-score="1" title="1分：明顯排斥或焦慮">1 ❄️</button>
+                          <button type="button" class="star-btn" data-score="2" title="2分：避談或略感尷尬">2 ☁️</button>
+                          <button type="button" class="star-btn" data-score="3" title="3分：平淡中立無特殊反應">3 🌤️</button>
+                          <button type="button" class="star-btn active" data-score="4" title="4分：願意傾聽且態度友善">4 ☀️</button>
+                          <button type="button" class="star-btn" data-score="5" title="5分：明確表達支持與理解">5 🌈</button>
+                        </div>
+                        <input type="hidden" id="log-score" value="4" />
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label for="log-note">觀察隨手記（對方說了什麼？語氣如何？）</label>
+                      <textarea id="log-note" rows="2" placeholder="例：一起看《鬼家人》時，媽媽說其實只要孩子開心平安就好，語氣比以前柔和許多。" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width">
+                      ＋ 新增試水溫紀錄並更新分析
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- 下方全寬：期間狀態分析儀表板 -->
+              <div class="card analysis-card">
+                <div class="card-header wrap-header">
+                  <div>
+                    <span class="section-badge">期間狀態分析報告</span>
+                    <h3>關係氣象趨勢與出櫃時機診斷</h3>
+                  </div>
+                  <div class="filter-pills" id="log-filter-pills">
+                    <button class="filter-pill active" data-target="全部">全部對象</button>
+                    <button class="filter-pill" data-target="媽媽">媽媽</button>
+                    <button class="filter-pill" data-target="爸爸">爸爸</button>
+                    <button class="filter-pill" data-target="手足">手足</button>
+                    <button class="filter-pill" data-target="摯友">摯友</button>
+                  </div>
+                </div>
+
+                <div class="analysis-layout">
+                  <div class="chart-box">
+                    <div class="chart-header-row">
+                      <span>反應溫度變化曲線（1~5 分）</span>
+                      <span id="avg-temp-badge" class="avg-badge">平均溫度：--</span>
+                    </div>
+                    <div id="trend-chart-container" class="trend-chart-container"></div>
+                  </div>
+
+                  <div class="diagnosis-box">
+                    <h4>📊 期間洞察與行動建議</h4>
+                    <div id="diagnosis-report-content" class="diagnosis-content"></div>
+                    <div class="safe-topics-row">
+                      <span class="st-label">最友善切入話題：</span>
+                      <div id="best-topic-tags" class="topic-tags"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="logs-list-wrap">
+                  <h4>歷史試水溫紀錄明細</h4>
+                  <div id="probe-logs-list" class="probe-logs-list"></div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 分頁 2：敘事轉譯室（框架理論） ============ -->
+            <section id="tab-translator" class="tab-panel">
+              <div class="panel-grid-2">
+                <!-- 左欄：三步驟設定 -->
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <span class="section-badge">Framing Theory・框架理論引擎</span>
+                      <h3>三步驟出櫃敘事轉譯器</h3>
+                    </div>
+                  </div>
+                  <p class="card-desc">依據傳播學「框架理論」，人們理解一件未知事物取決於它被放進什麼敘事框架。把「身分坦白」重新框架為「邀請最愛的人走進幸福」，能大幅降低對方的防衛本能。</p>
+
+                  <div class="translator-form">
+                    <div class="field">
+                      <label>Step 1｜選擇你準備溝通的對象</label>
+                      <div class="chip-group" id="tr-target-group">
+                        <button type="button" class="chip active" data-value="traditional_parents">傳統保守父母</button>
+                        <button type="button" class="chip" data-value="anxious_parents">開明但易焦慮父母</button>
+                        <button type="button" class="chip" data-value="siblings">兄弟姊妹</button>
+                        <button type="button" class="chip" data-value="close_friend">摯友 / 室友</button>
+                        <button type="button" class="chip" data-value="workplace">職場同事 / 主管</button>
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label>Step 2｜剖析對方內心最深層的擔憂（同理心錨點）</label>
+                      <div class="chip-group" id="tr-fear-group">
+                        <button type="button" class="chip active" data-value="lonely">擔心你未來孤單 / 老了沒人照顧</button>
+                        <button type="button" class="chip" data-value="reputation">在乎親戚眼光 / 傳宗接代壓力</button>
+                        <button type="button" class="chip" data-value="discrimination">害怕你在社會上受苦 / 被歧視</button>
+                        <button type="button" class="chip" data-value="confused">資訊落差 / 以為是一時迷惘或被影響</button>
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label>Step 3｜選擇要套用的傳播「敘事框架」</label>
+                      <div class="frame-cards-select" id="tr-frame-group">
+                        <button type="button" class="frame-option active" data-value="love_trust">
+                          <div class="fo-title">🌱 框架 A：愛與信任框架</div>
+                          <div class="fo-sub">「不是為了對立，而是因為最在乎你，想讓你認識真實的我。」</div>
+                        </button>
+                        <button type="button" class="frame-option" data-value="stability">
+                          <div class="fo-title">🏡 框架 B：穩定與幸福框架</div>
+                          <div class="fo-sub">「把焦點從標籤移回日常生活：我有工作、有照顧好自己、也有被愛的未來。」</div>
+                        </button>
+                        <button type="button" class="frame-option" data-value="buffer_letter">
+                          <div class="fo-title">🕰️ 框架 C：緩衝留白框架（破解門把效應）</div>
+                          <div class="fo-sub">「用溫柔書信取代當面逼問，明確告訴對方：你不需要現在就回答我。」</div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <div class="slider-label-row">
+                        <label for="tone-slider">Step 4｜語氣微調</label>
+                        <span id="tone-label" class="slider-val">溫柔堅定</span>
+                      </div>
+                      <input type="range" id="tone-slider" min="1" max="3" value="2" class="warm-range" />
+                      <div class="tone-ticks">
+                        <span>含蓄試探</span>
+                        <span>溫柔堅定</span>
+                        <span>深情書信</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 右欄：對照分析與可編輯草稿 -->
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <span class="section-badge">即時轉譯產出</span>
+                      <h3>焦慮對照 × 專屬出櫃草稿</h3>
+                    </div>
+                    <span class="theory-tag" id="active-frame-badge">🌱 愛與信任框架</span>
+                  </div>
+
+                  <!-- 對照卡片 -->
+                  <div class="compare-grid">
+                    <div class="compare-box risk">
+                      <div class="cb-head">⚠️ 容易觸發防衛的原話</div>
+                      <p id="compare-risk-text"></p>
+                    </div>
+                    <div class="compare-box safe">
+                      <div class="cb-head">✨ 框架轉譯後的溫柔敘事</div>
+                      <p id="compare-safe-text"></p>
+                    </div>
+                  </div>
+
+                  <div class="psych-why-box">
+                    <strong>🧠 傳播心理學解析：</strong>
+                    <span id="compare-why-text"></span>
+                  </div>
+
+                  <!-- 可編輯家書 -->
+                  <div class="draft-editor-wrap">
+                    <div class="draft-toolbar">
+                      <label for="generated-script">可自由修改的個人專屬講稿 / 家書：</label>
+                      <button type="button" id="regenerate-script-btn" class="btn-ghost-xs">↻ 重置為系統建議稿</button>
+                    </div>
+                    <textarea id="generated-script" rows="9" class="script-textarea"></textarea>
+                    <div class="draft-actions">
+                      <button type="button" id="copy-script-btn" class="btn-primary">📋 一鍵複製文字</button>
+                      <button type="button" id="preview-letter-btn" class="btn-secondary">💌 預覽溫柔信件小卡</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 分頁 3：模擬演練室 ============ -->
+            <section id="tab-simulator" class="tab-panel">
+              <div class="card">
+                <div class="card-header wrap-header">
+                  <div>
+                    <span class="section-badge">NVC 非暴力溝通實戰</span>
+                    <h3>出櫃對話模擬演練室</h3>
+                  </div>
+                  <div class="scenario-tabs" id="scenario-selector">
+                    <button class="scenario-btn active" data-scenario="mom">👩 媽媽：擔心與質疑</button>
+                    <button class="scenario-btn" data-scenario="dad">👨 爸爸：沉默與面子</button>
+                    <button class="scenario-btn" data-scenario="friend">🧑‍🤝‍🧑 摯友：驚訝與關心</button>
+                  </div>
+                </div>
+                <p class="card-desc">在安全的沙盒裡預演最令人害怕的「第一句回應」。觀察不同敘事策略如何影響對方的防衛情緒溫度，找到最保護彼此關係的回應方式。</p>
+
+                <div class="sim-layout">
+                  <!-- 對話視窗 -->
+                  <div class="sim-chat-col">
+                    <div class="sim-status-bar">
+                      <div class="sim-persona-info">
+                        <span id="sim-avatar" class="sim-avatar">👩</span>
+                        <div>
+                          <strong id="sim-partner-name">媽媽（傳統但疼愛你）</strong>
+                          <small id="sim-turn-indicator">第 1 / 3 回合</small>
+                        </div>
+                      </div>
+                      <div class="temp-meter">
+                        <span>對方理解與安心度：</span>
+                        <div class="temp-bar-track">
+                          <div id="sim-temp-fill" class="temp-bar-fill" style="width: 45%"></div>
+                        </div>
+                        <strong id="sim-temp-val">45°C</strong>
+                      </div>
+                    </div>
+
+                    <div id="sim-chat-log" class="sim-chat-log"></div>
+
+                    <div id="sim-choices-area" class="sim-choices-area">
+                      <div class="choices-title">選擇你的回應框架（或下方自行輸入練習）：</div>
+                      <div id="sim-choices-list" class="sim-choices-list"></div>
+
+                      <form id="sim-custom-form" class="sim-custom-form">
+                        <input type="text" id="sim-custom-input" placeholder="或是自己打一句想說的話，看看教練怎麼分析⋯⋯" />
+                        <button type="submit" class="btn-secondary">送出練習</button>
+                      </form>
+                    </div>
+
+                    <div id="sim-finish-banner" class="sim-finish-banner hidden">
+                      <h4>✨ 本輪模擬演練完成！</h4>
+                      <p id="sim-finish-summary"></p>
+                      <button id="sim-restart-btn" class="btn-primary">重新演練此情境</button>
+                    </div>
+                  </div>
+
+                  <!-- 右側即時教練講評 -->
+                  <aside class="sim-coach-col">
+                    <div class="coach-card">
+                      <div class="coach-head">
+                        <span>🎓 傳播與心理教練即時解析</span>
+                      </div>
+                      <div id="coach-feedback-body" class="coach-body">
+                        <p class="coach-placeholder">請在左側選擇一個回應選項，我會即時分析這句話背後啟動了什麼「框架效應」，以及如何幫助雙方降低防衛。</p>
+                      </div>
+                    </div>
+
+                    <div class="coach-tips-card">
+                      <h5>💡 實戰黃金三原則</h5>
+                      <ul>
+                        <li><strong>不急著當下說服：</strong>對方的第一反應常來自「震驚與資訊不足」，給他時間就是給你們的關係空間。</li>
+                        <li><strong>先接住愛，再澄清事實：</strong>先肯定「我知道你擔心我受傷」，對方才聽得進去後面的解釋。</li>
+                        <li><strong>保留退場優雅度：</strong>當對話過熱，主動說「我們都先休息一下」能防止撕裂。</li>
+                      </ul>
+                    </div>
+                  </aside>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 分頁 4：親友轉譯包 ============ -->
+            <section id="tab-family-pack" class="tab-panel">
+              <div class="card family-pack-card" id="family-pack-root">
+                <div class="card-header wrap-header">
+                  <div>
+                    <span class="section-badge">雙向溝通橋樑・給親愛的家人</span>
+                    <h3>親友理解轉譯小百科</h3>
+                  </div>
+                  <div class="fp-controls">
+                    <button id="toggle-elder-font-btn" class="btn-secondary">🔍 切換長輩友善大字</button>
+                    <button id="copy-family-guide-btn" class="btn-primary">📋 複製傳給爸媽看</button>
+                  </div>
+                </div>
+
+                <div class="fp-hero-note">
+                  <h4>給剛得知消息、心裡可能有點震驚或手足無措的您：</h4>
+                  <p>如果您的孩子或親友鼓起勇氣向您說出這件事，請先知道一件事：<strong>他/她不是想推開您，恰恰相反，是因為您在他/她生命裡很重要，他/她不想一輩子對最愛的人戴著面具。</strong>您現在的震驚、困惑甚至難過都是很正常的，您不需要今天就懂全部，只要先留下愛就夠了。</p>
+                </div>
+
+                <div class="fp-grid">
+                  <!-- 三要三不 -->
+                  <div class="fp-subcard">
+                    <h4>💛 剛知道的時候，可以先試著這麼做（三要）</h4>
+                    <ul class="fp-check-list">
+                      <li><strong>1. 要先給一句安穩的話：</strong>哪怕心裡還沒消化完，可以先說：「謝謝你願意告訴我，讓我需要一點時間想一想，但我還是很愛你。」</li>
+                      <li><strong>2. 要照顧自己的情緒：</strong>父母也會有失落與擔憂，可以撥打「同志父母諮詢專線」找有相同經驗的爸媽聊聊，不必一個人悶著。</li>
+                      <li><strong>3. 要看見眼前的這個人：</strong>出櫃前後，他/她依然是那個愛笑、努力生活、會關心您身體健康的孩子，本質從未改變。</li>
+                    </ul>
+                  </div>
+
+                  <div class="fp-subcard warn-tint">
+                    <h4>🌿 請盡量先避免的反應（三不）</h4>
+                    <ul class="fp-warn-list">
+                      <li><strong>1. 不要急著自責：</strong>這不是誰沒教好、也不是家庭環境造成的錯，更不是因為受了誰的影響。</li>
+                      <li><strong>2. 不要說「這只是你還沒遇到對的人」：</strong>對當事人而言，這句話常會讓他覺得自己的真實感受被否定了。</li>
+                      <li><strong>3. 不要在情緒上頭時下最後通牒：</strong>氣話往往最難收回，當兩個人都很激動時，先各自喝杯水、隔天再談是最好的保護。</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="fp-faq-section">
+                  <h4>❓ 長輩最常放在心底的疑惑（點擊展開溫柔解答）</h4>
+                  <div class="faq-list" id="family-faq-list">
+                    <details class="faq-item" open>
+                      <summary>Q1：同志老了以後會不會孤單沒人照顧？</summary>
+                      <p>每個人老年會不會孤單，取決於有沒有健康的社群、伴侶關係與經濟規劃，而非性傾向。台灣自 2019 年起已合法保障同性婚姻，同志伴侶同樣可以結婚、共同買房、簽署醫療同意書、互相繼承與陪伴終老，也能收養孩子或與親友緊密連結。</p>
+                    </details>
+                    <details class="faq-item">
+                      <summary>Q2：這會不會是最近壓力太大，或者被網路、朋友帶壞的？</summary>
+                      <p>世界衛生組織與台灣心理學界皆已明確指出，性傾向是人類自然多樣性的一部分，並非疾病，也不是被教導或模仿出來的。孩子往往在心裡獨自掙扎、確認了好幾年，才終於有勇氣向最親近的家人坦白。</p>
+                    </details>
+                    <details class="faq-item">
+                      <summary>Q3：我還是很擔心他在外面會被親戚鄰居講閒話、被欺負怎麼辦？</summary>
+                      <p>您的擔心完全來自於深厚的母愛／父愛！其實孩子最需要的，正是家裡有一盞燈是為他留著的。當家成為避風港，他就有足夠的勇氣去面對外面的世界；而且您也不必立刻對所有親戚公開，出櫃的節奏可以由你們母子／父子一起討論決定。</p>
+                    </details>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 分頁 5：安心防護網 ============ -->
+            <section id="tab-safety" class="tab-panel">
+              <div class="panel-grid-2">
+                <!-- 左欄：個人安全計畫清單 -->
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <span class="section-badge">心理與物理安全底線</span>
+                      <h3>我的出櫃安心防護計畫</h3>
+                    </div>
+                    <span id="safety-progress-badge" class="stage-pill">已完成 0/4</span>
+                  </div>
+                  <p class="card-desc">在開口前先為自己鋪好「安全軟墊」。這些資料只儲存在你自己的瀏覽器裡，不會上傳至任何伺服器。</p>
+
+                  <div class="safety-checklist" id="safety-checklist">
+                    <label class="safety-item">
+                      <input type="checkbox" data-key="checkContact" />
+                      <div class="si-content">
+                        <strong>1. 設定好「當晚安全退路聯絡人」</strong>
+                        <span>找一位已知情的好友或伴侶，約定好出櫃當天保持手機暢通，談完後打一通電話報平安或哭一場。</span>
+                        <input type="text" class="si-input" data-field="contactName" placeholder="填寫聯絡人姓名與方式（例：小安 / 隨時可撥 Line）" />
+                      </div>
+                    </label>
+
+                    <label class="safety-item">
+                      <input type="checkbox" data-key="checkPause" />
+                      <div class="si-content">
+                        <strong>2. 準備一句「情緒暫停暗號」</strong>
+                        <span>當現場氣氛過熱或對方口出重話時，用預先練好的句子溫柔離席，避免互傷。</span>
+                        <input type="text" class="si-input" data-field="pausePhrase" placeholder="例：媽，我們現在情緒都很滿，我先回房間休息，明天再聊好嗎？" />
+                      </div>
+                    </label>
+
+                    <label class="safety-item">
+                      <input type="checkbox" data-key="checkPlace" />
+                      <div class="si-content">
+                        <strong>3. 確認「過渡喘息空間」與重要證件</strong>
+                        <span>選在週末下午或彼此有空檔時對話（避免半夜或出門前五分鐘的門把效應），並確認必要時有去處可住一晚。</span>
+                        <input type="text" class="si-input" data-field="safePlace" placeholder="例：外縣市租屋處 / 好友家客廳 / 咖啡廳見面" />
+                      </div>
+                    </label>
+
+                    <label class="safety-item">
+                      <input type="checkbox" data-key="checkSelfcare" />
+                      <div class="si-content">
+                        <strong>4. 出櫃後的自我安撫儀式</strong>
+                        <span>無論結果是擁抱還是沉默，這都是很勇敢的一步。記得留給自己一頓喜歡的飯或一段放空散步的時間。</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 右欄：台灣真實在地支援資源 -->
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <span class="section-badge">Taiwan Support Network</span>
+                      <h3>台灣在地真實支援資源</h3>
+                    </div>
+                  </div>
+                  <p class="card-desc">你不需要一個人承擔所有重量，無論是你自己，或是需要找人聊聊的父母，台灣都有溫暖專業的陪伴資源。</p>
+
+                  <div class="resource-cards">
+                    <div class="res-card highlight">
+                      <div class="res-badge">專為父母與親友設立</div>
+                      <h4>📞 台灣同志諮詢熱線 — 同志父母親人諮詢專線</h4>
+                      <p class="res-meta">電話：<strong>(02) 2392-1970</strong>｜時段：每週二 18:00–21:00、每週四 14:00–17:00</p>
+                      <p>由同樣走過這段歷程的「同志父母」親自接聽！如果爸媽不知如何消化情緒、不敢問親戚，把這支電話轉給他們是最強大的後盾。</p>
+                    </div>
+
+                    <div class="res-card">
+                      <h4>🌈 社團法人台灣同志諮詢熱線協會（本人諮詢）</h4>
+                      <p class="res-meta">台北總會：<strong>(02) 2392-1969</strong>｜南部辦公室：<strong>(07) 281-1265</strong></p>
+                      <p>辦公時間週一至週五 14:00–22:00；家庭小組信箱：<code>family@hotline.org.tw</code>。提供出櫃諮詢、櫃父母茶會與法律/情感支持。</p>
+                    </div>
+
+                    <div class="res-card">
+                      <h4>🫂 緊急心理支持與免費專線</h4>
+                      <p class="res-meta">衛福部安心專線：<strong>1925</strong>（24小時免費）｜生命線：<strong>1995</strong>｜張老師專線：<strong>1980</strong></p>
+                      <p>若出櫃後面臨極大心理壓力、家庭衝突或情緒低谷，請務必立即撥打，讓專業輔導員陪你度過難關。</p>
+                    </div>
+
+                    <div class="res-card">
+                      <h4>⚖️ 法律與婚姻家庭權益資訊</h4>
+                      <p class="res-meta">台灣伴侶權益推動聯盟（TAPCPR）｜各地性別友善心理諮商所</p>
+                      <p>如需向家人說明台灣同婚專法保障、共同收養或醫療代理權，可查詢伴侶盟官方整理之法規懶人包。</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 視圖二：PM 產品企劃與傳播理論藍圖（對應課堂簡報） -->
+    <main id="view-pm" class="main-container hidden">
+      <div class="pm-wrapper">
+        <section class="pm-hero-card">
+          <div class="pm-badge-row">
+            <span class="section-badge">傳播研究專題：AI 賦能的社會議題解決與跨域實作</span>
+            <span class="tag-pill">資訊轉譯・敘事設計</span>
+          </div>
+          <h2>《暖光 GlowOut》PM 產品企劃與傳播理論藍圖</h2>
+          <p>將醫療溝通領域的<strong>「解決門把效應 × 平時狀態紀錄 × 期間分析報告」</strong>跨域轉譯至「同志出櫃家庭溝通」情境，結合<strong>主要 Persona、5 Whys 與框架理論（Framing Theory）</strong>，協助使用者將高風險攤牌轉化為有準備的雙向理解。</p>
+        </section>
+
+        <!-- APP 四問 -->
+        <section class="pm-section">
+          <h3 class="pm-sec-title">1. 產品定位四問（APP 核心定義與使用情境）</h3>
+          <div class="pm-4q-grid">
+            <div class="pm-q-card">
+              <div class="q-num">Q1｜這是何種 APP？</div>
+              <h4>AI 敘事轉譯 × 關係紀錄陪伴型 Web App</h4>
+              <p>並非冷冰冰的心理測驗，而是一套結合「日常試水溫紀錄追蹤」、「框架理論語句轉譯」、「互動對話沙盒」與「長輩友善轉譯包」的雙向溝通領航工具。</p>
+            </div>
+            <div class="pm-q-card">
+              <div class="q-num">Q2｜誰來使用？（使用者設定）</div>
+              <h4>雙端使用者：準備出櫃者 × 接收訊息的親友/長輩</h4>
+              <p>前期由準備出櫃的青年（主要使用者）進行狀態評估、試水溫紀錄與對話演練；出櫃當下或之後，將內建的「親友轉譯包」傳給父母（延伸使用者），降低雙方的資訊落差。</p>
+            </div>
+            <div class="pm-q-card">
+              <div class="q-num">Q3｜用了會如何？（預期效益）</div>
+              <h4>從「恐懼攤牌、兩敗俱傷」轉向「低防衛、留白共感」</h4>
+              <p>出櫃者不再憑感覺衝動開口；長輩接收到的不是衝擊性的標籤，而是「被愛、被信任與未來依舊穩定」的敘事，大幅提高後續對話意願。</p>
+            </div>
+            <div class="pm-q-card">
+              <div class="q-num">Q4｜解決門把效應的使用情境</div>
+              <h4>將「臨別最後一秒」分散到「平時溫柔累積」</h4>
+              <p>傳統出櫃常發生在離家搭車前、飯局散場手握門把時倉促說出（或吞回）。本 App 透過平時看劇/聊時事的微紀錄產出趨勢報告，並以「緩衝型家書」預留長輩消化空間，徹底化解門把效應。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 主要的 Persona -->
+        <section class="pm-section">
+          <h3 class="pm-sec-title">2. 主要的 Persona（雙主角視角設定）</h3>
+          <div class="persona-grid">
+            <div class="persona-card">
+              <div class="persona-head">
+                <div class="persona-avatar">🧑🏻</div>
+                <div>
+                  <span class="persona-role">主要使用者 A（出櫃發起端）</span>
+                  <h4>林宇｜23 歲・剛出社會的軟體實習生</h4>
+                </div>
+              </div>
+              <div class="persona-body">
+                <p><strong>背景與處境：</strong>經濟剛開始半獨立，有穩定交往半年的伴侶。媽媽每週打電話催問交女友沒，讓他越來越愧疚，覺得自己一直在對最愛的人說謊。</p>
+                <p><strong>核心痛點（門把效應）：</strong>每次返鄉週日晚餐後要回台北、手剛搭上玄關門把時，總想說出口卻又怕媽媽當場崩潰，最後只能憋著眼淚說「沒事，我先搭車了」。</p>
+                <p><strong>App 使用情境：</strong>平時看電影時記錄媽媽對性別議題的態度溫度（試水溫），並在「敘事轉譯室」把焦慮轉寫成不需當下回覆的緩衝型家書。</p>
+              </div>
+            </div>
+
+            <div class="persona-card secondary">
+              <div class="persona-head">
+                <div class="persona-avatar">👩🏻</div>
+                <div>
+                  <span class="persona-role">主要使用者 B（共同使用者／親友接收端）</span>
+                  <h4>秀琴姐｜54 歲・傳統家庭主婦</h4>
+                </div>
+              </div>
+              <div class="persona-body">
+                <p><strong>背景與處境：</strong>非常疼愛兒子，平時生活圈單純、資訊來源多為LINE群組與鄰里聊天。對同志議題不了解，腦中只連結到「被欺負、沒後代、老了孤單」。</p>
+                <p><strong>核心痛點：</strong>當孩子突然出櫃時，第一反應不是不愛孩子，而是強烈的不知所措、自責「是不是我沒照顧好他」，卻又不知該找誰商量。</p>
+                <p><strong>App 使用情境：</strong>透過兒子傳來的「親友轉譯包（大字體版）」看懂迷思解答，並撥打專線電話找到同為同志母親的支持夥伴。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 Whys -->
+        <section class="pm-section">
+          <h3 class="pm-sec-title">3. 5 Whys 深度痛點拆解（找出問題根源）</h3>
+          <div class="whys-ladder">
+            <div class="why-step">
+              <span class="why-num">Why 1</span>
+              <div class="why-txt">
+                <strong>為什麼許多同志對家人出櫃時，容易演變成激烈衝突或長達數年的冷戰？</strong>
+                <p>因為雙方在開口的那一刻都處於高度恐懼與情緒過載，常出現「門把效應」（挑在極限時刻倉促說出或吞回）。</p>
+              </div>
+            </div>
+            <div class="why-step">
+              <span class="why-num">Why 2</span>
+              <div class="why-txt">
+                <strong>為什麼父母一聽到出櫃會本能地產生劇烈防衛或否定？</strong>
+                <p>因為父母腦中瞬間啟動的是「擔心孩子受苦、老無所依、親友眼光」的危機框架，而非看見孩子現在的真實幸福。</p>
+              </div>
+            </div>
+            <div class="why-step">
+              <span class="why-num">Why 3</span>
+              <div class="why-txt">
+                <strong>為什麼父母與孩子對同一件事會有如此巨大的認知落差？</strong>
+                <p>因為平時缺乏低壓力的「日常試水溫觀察」，出櫃前也沒有把生硬的身分名詞，轉譯成父母能共鳴的生活價值。</p>
+              </div>
+            </div>
+            <div class="why-step">
+              <span class="why-num">Why 4</span>
+              <div class="why-txt">
+                <strong>為什麼出櫃者自己很難在當下完成這種溫柔轉譯？</strong>
+                <p>因為當事人自身也背負著巨大心理壓力與被拒絕的恐懼，在腎上腺素飆升時難以維持非暴力溝通的冷靜與同理心。</p>
+              </div>
+            </div>
+            <div class="why-step root">
+              <span class="why-num">Why 5（Root Cause）</span>
+              <div class="why-txt">
+                <strong>根本解方：缺少一個結合「日常關係觀測紀錄」與「框架理論敘事轉譯」的事前陪伴系統。</strong>
+                <p>因此《暖光 GlowOut》誕生：讓使用者在安全的情況下長期記錄反應、模擬演練，並用設計好的敘事框架溫柔開門。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 框架理論 Framing Theory -->
+        <section class="pm-section">
+          <h3 class="pm-sec-title">4. 框架理論（Framing Theory）在產品中的三大資訊轉譯機制</h3>
+          <div class="framing-grid">
+            <div class="framing-box">
+              <span class="f-tag">轉譯機制 01</span>
+              <h4>從「對立攤牌框架」→「愛與信任邀請框架」</h4>
+              <p>將「我有件事要跟你坦白（暗示愧疚與衝突）」轉譯為「因為你在我生命裡很重要，我想邀請你認識完整的我（強調情感連結）」。</p>
+            </div>
+            <div class="framing-box">
+              <span class="f-tag">轉譯機制 02</span>
+              <h4>從「抽象標籤框架」→「具象日常幸福框架」</h4>
+              <p>長輩恐懼的是看不見的「同性戀」符號；透過敘事將重點轉移到「工作穩定、有互相照顧的伴侶、依法享有保障」等長輩聽得懂的安全感指標。</p>
+            </div>
+            <div class="framing-box">
+              <span class="f-tag">轉譯機制 03</span>
+              <h4>從「即時表態壓力」→「緩衝留白框架」</h4>
+              <p>破解門把效應的核心：在敘事結尾主動給予接收者「不需立刻表態的權利」，讓長輩有機會打開「親友轉譯包」慢慢消化，把關係留給時間。</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- 溫柔信件預覽 Modal -->
+    <div id="letter-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="letter-modal-title">
+      <div class="letter-card">
+        <div class="letter-card-head">
+          <span class="letter-stamp">暖光・給重要的人的一封信</span>
+          <button id="close-letter-modal" class="modal-close-btn" aria-label="關閉預覽">✕</button>
+        </div>
+        <h3 id="letter-modal-title">親愛的，我想讓你更靠近真實的我</h3>
+        <div id="letter-modal-body" class="letter-modal-body"></div>
+        <div class="letter-card-footer">
+          <span>這封信不要求你立刻回答，慢慢看就好。</span>
+          <button id="modal-copy-btn" class="btn-primary">複製這封信</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
