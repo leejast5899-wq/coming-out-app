@@ -1,139 +1,257 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "glowout_app_state_v1";
+  const STORAGE_KEY = "safepride_app_state_v1";
 
-  const DEFAULT_LOGS = [
+  const INITIAL_PINS = [
     {
-      id: "log-1",
-      date: "2026-10-20",
-      target: "媽媽",
-      topic: "婚姻與家庭觀",
-      score: 2,
-      note: "親戚問何時帶女友回家時，媽媽笑說不要亂講話，但私下又叮嚀我還是要找個伴比較不孤單。"
+      id: "pin-1",
+      type: "friendly",
+      name: "虹光友善咖啡廳",
+      zone: "彩虹大道一段",
+      desc: "營業至 24:00，設有性別友善廁所與夜間安全等候座位，店員受過多元友善培訓。",
+      confirmations: 24,
+      x: 195,
+      y: 62
     },
     {
-      id: "log-2",
-      date: "2026-10-29",
-      target: "手足",
-      topic: "影視作品",
-      score: 5,
-      note: "跟姊姊聊《關於我和鬼變成家人的那件事》，她很自然地說家人能互相理解最重要。"
+      id: "pin-2",
+      type: "friendly",
+      name: "共融藥局與安心驛站",
+      zone: "彩虹大道一段",
+      desc: "明亮落地窗與 24 小時監視器，夜間感到不安或被跟蹤時可直接入內請求暫時協助。",
+      confirmations: 19,
+      x: 405,
+      y: 60
     },
     {
-      id: "log-3",
-      date: "2026-11-06",
-      target: "媽媽",
-      topic: "影視作品",
-      score: 3,
-      note: "一起看新聞聊到同志伴侶一起買房照顧彼此，媽媽沒有轉台，只說兩個人能互相扶持也不錯。"
+      id: "pin-3",
+      type: "friendly",
+      name: "微光多元性別書店",
+      zone: "共融公園路",
+      desc: "定期舉辦社群交流活動，空間溫暖開放，提供免費多元性別支持小卡。",
+      confirmations: 31,
+      x: 225,
+      y: 270
     },
     {
-      id: "log-4",
-      date: "2026-11-14",
-      target: "媽媽",
-      topic: "身邊朋友故事",
-      score: 4,
-      note: "跟媽媽提到大學朋友很照顧自己的同性伴侶，媽媽說：『只要是好孩子、對你好最重要。』態度明顯軟化。"
+      id: "pin-4",
+      type: "friendly",
+      name: "24H 亮燈超商守護站",
+      zone: "彩虹大道便利商店旁",
+      desc: "門口照明極佳，與社區巡守點連線，夜間返家可作為安全中繼點。",
+      confirmations: 16,
+      x: 78,
+      y: 272
+    },
+    {
+      id: "pin-5",
+      type: "warning",
+      name: "捷運北側 3 號暗巷",
+      zone: "捷運站北側暗巷",
+      desc: "晚間十點後兩盞路燈常故障，曾有 2 筆夜間口哨與言語騷擾回報，建議改走主幹道。",
+      confirmations: 9,
+      x: 92,
+      y: 158
+    },
+    {
+      id: "pin-6",
+      type: "warning",
+      name: "東側施工圍籬轉角",
+      zone: "共融公園東側人行道",
+      desc: "施工通道狹窄且視線死角多，夜間行經請保持通話或結伴同行。",
+      confirmations: 7,
+      x: 410,
+      y: 168
+    },
+    {
+      id: "pin-7",
+      type: "warning",
+      name: "夜市外圍候車暗處",
+      zone: "夜市外圍公車站",
+      desc: "深夜人潮散去後光線較暗，曾有不友善注視與挑釁言語回報。",
+      confirmations: 5,
+      x: 382,
+      y: 266
     }
   ];
 
-  const DEFAULT_STATE = {
-    readiness: {
-      support: 8,
-      independence: 7,
-      trust: 7,
-      emotion: 7
+  const REPORT_TYPES = [
+    { id: "harassment", label: "言語騷擾或跟蹤疑慮", pinType: "warning", hint: "匿名加密・標示警示熱點" },
+    { id: "lighting", label: "夜間路燈照明不足", pinType: "warning", hint: "匿名加密・標示暗巷疑慮" },
+    { id: "unfriendly", label: "空間或店家不友善對待", pinType: "warning", hint: "匿名加密・提醒社群避開" },
+    { id: "friendly_new", label: "推薦 LGBTQ+ 友善空間", pinType: "friendly", hint: "分享安心據點・點亮地圖" }
+  ];
+
+  const ZONE_COORDS = {
+    "捷運站北側暗巷": { x: 112, y: 142 },
+    "彩虹大道便利商店旁": { x: 162, y: 185 },
+    "共融公園東側人行道": { x: 438, y: 150 },
+    "夜市外圍公車站": { x: 356, y: 278 }
+  };
+
+  const SCENARIOS = {
+    street: {
+      situation: "深夜 11 點走過捷運站外，後方兩名路人突然對著你的穿著吹口哨並大聲嘲笑：「男不男女不女的真怪！」此時你該如何優先應變？",
+      options: [
+        {
+          label: "A. 停下腳步回頭與對方理論對罵",
+          guidance: "⚠️ 人身安全第一：深夜在人煙稀少處與挑釁者正面對罵，極易升高肢體衝突風險。建議保持冷靜、不與其眼神糾纏，加快步入明亮商店。",
+          safe: false
+        },
+        {
+          label: "B. 保持冷靜不回頭，快速移動至有店員／監視器的 24H 超商並開啟手機錄音或撥打友人電話",
+          guidance: "✅ 最佳安全應變！不與挑釁者產生情緒耗損，第一時間移動至 SafePride 地圖上的「❤️ 友善超商／亮燈空間」，並記下時間地點稍後匿名回報提醒社群。",
+          safe: true
+        },
+        {
+          label: "C. 忍氣吞聲走進更暗的小巷想趕快甩開他們",
+          guidance: "⚠️ 切勿走入暗巷！陌生暗巷容易遇到死胡同或視線死角，務必往有路燈、車流與店家的主幹道移動。",
+          safe: false
+        }
+      ]
     },
-    probeLogs: DEFAULT_LOGS,
-    safety: {
-      checkContact: true,
-      checkPause: true,
-      checkPlace: false,
-      checkSelfcare: false,
-      contactName: "大學摯友 小安（已約好週六晚上電話待命）",
-      pausePhrase: "媽，我看到你很驚訝，我們先喝口水休息一下，明天再慢慢聊好嗎？",
-      safePlace: "自己的租屋處"
+    transit: {
+      situation: "搭乘捷運或公車時，身旁乘客故意大聲對同行友人說：「現在這種人真噁心，怎麼敢這樣出門？」並持續用不友善眼光盯著你。",
+      options: [
+        {
+          label: "A. 戴上耳機默默忍耐到終點站，事後感到嚴重內耗",
+          guidance: "💡 自我保護是可以的，但你不必獨自承受！移動到車廂其他位置或靠近車門對講機，能有效切斷不友善視線，下車後記得透過模擬與支持資源照顧自己的情緒。",
+          safe: false
+        },
+        {
+          label: "B. 立即起身換至靠近司機／列車長或人群較多的車廂，必要時請站務人員協助",
+          guidance: "✅ 非常聰明的界線保護！利用大眾運輸的移動自由度立即遠離不友善源頭，若對方有持續跟蹤或辱罵行為，可按車廂緊急對講機請站務人員處理。",
+          safe: true
+        },
+        {
+          label: "C. 當場大聲要求對方道歉",
+          guidance: "⚠️ 密閉空間中直接要求道歉可能會激怒對方引發推擠。若決定發聲，建議先確認周圍有其他乘客或站務員在場，並簡短堅定表達「請停止對我的騷擾」後移動位置。",
+          safe: false
+        }
+      ]
+    },
+    work: {
+      situation: "在學校分組或公司茶水間，聽到同學／同事拿多元性別開低俗玩笑，雖然不是直接指著你，但氣氛讓你非常不舒服。",
+      options: [
+        {
+          label: "A. 視自身安全與關係程度，用溫和但明確的一句話轉移界線：「這種玩笑對某些人其實蠻傷人的，我們聊回企劃吧。」",
+          guidance: "✅ 溫柔而堅定的發聲（Speak Out）！不貼道德標籤、直接點出感受並導回正題，常能讓原本沒意識到冒犯的人安靜下來。",
+          safe: true
+        },
+        {
+          label: "B. 跟著尷尬陪笑，假裝自己也不在乎",
+          guidance: "💡 若當下評估出櫃或表達立場有職場報復風險，先保護自己完全沒關係！事後可匿名紀錄事件並向性別友善同事或輔導／申訴管道諮詢。",
+          safe: false
+        },
+        {
+          label: "C. 在公開群組截圖公審對方",
+          guidance: "⚠️ 未經蒐證或評估下公開指責容易引發名譽或職場反彈。建議先記錄對話日期與在場證人，諮詢性平會或伴侶盟等專業單位再採取行動。",
+          safe: false
+        }
+      ]
     }
   };
 
+  const BYSTANDER_GUIDES = {
+    distract: {
+      bubble: "「嗨！原來你在這，我找你超久了！」",
+      script: "【分散注意力（最安全推薦）】不需要與騷擾者起衝突！你可以自然地走到受困者身邊，假裝是老朋友問：「欸你怎麼在這？我們快遲到了！」或假裝問路、不小心掉東西，自然打破騷擾情境並帶對方離開現場。"
+    },
+    care: {
+      bubble: "「你還好嗎？我陪你走去亮一點的地方。」",
+      script: "【陪伴與事後關懷】當衝突結束或騷擾者離開後，走上前溫柔詢問：「剛才那樣很不好受吧？你還好嗎？需要我陪你走到捷運站、或幫你叫車嗎？」讓當事人知道這座城市裡有人站在他身邊。"
+    },
+    delegate: {
+      bubble: "「不好意思，那邊有人需要協助，可以幫忙嗎？」",
+      script: "【尋求協力支援】若自己一個人不敢上前，立即向超商店員、捷運站務員、警衛或公車司機通報，也可以請身旁其他路人一起關注現場並協助錄影存證或報警。"
+    },
+    direct: {
+      bubble: "「請停止這樣對待別人，這樣很不尊重人。」",
+      script: "【直接安全制止】確認自己與周圍環境安全無虞、且對方無危險武器時，用簡短、平靜且堅定的語氣明確指出行為不當，接著將注意力轉向關心受騷擾者，避免陷入無止盡的爭吵。"
+    }
+  };
+
+  const AVATAR_EMOJIS = ["👑", "🧑🏾", "🧢"];
+
   let state = loadState();
-  let activeFilterTarget = "全部";
+  let currentReportTypeIdx = 0;
+  let currentMapFilter = "all";
+  let currentScenarioKey = "street";
+  let currentBystanderKey = "distract";
+  const verifiedPinsSession = new Set();
 
-  // 轉譯器狀態
-  const translatorState = {
-    target: "traditional_parents",
-    fear: "lonely",
-    frame: "love_trust",
-    tone: 2
-  };
-
-  // 模擬器狀態
-  const simState = {
-    scenarioKey: "mom",
-    turnIndex: 0,
-    temp: 45,
-    finished: false
-  };
-
-  /* ================= 狀態存取 ================= */
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return structuredClone(DEFAULT_STATE);
+      if (!raw) return getDefaultState();
       const parsed = JSON.parse(raw);
       return {
-        readiness: { ...DEFAULT_STATE.readiness, ...(parsed.readiness || {}) },
-        probeLogs: Array.isArray(parsed.probeLogs) ? parsed.probeLogs : structuredClone(DEFAULT_LOGS),
-        safety: { ...DEFAULT_STATE.safety, ...(parsed.safety || {}) }
+        coins: Number.isFinite(parsed.coins) ? parsed.coins : 200,
+        gems: Number.isFinite(parsed.gems) ? parsed.gems : 40,
+        avatarIndex: Number.isFinite(parsed.avatarIndex) ? parsed.avatarIndex : 0,
+        pins: Array.isArray(parsed.pins) && parsed.pins.length ? parsed.pins : structuredClone(INITIAL_PINS),
+        userReports: Array.isArray(parsed.userReports) ? parsed.userReports : [],
+        petitionCount: Number.isFinite(parsed.petitionCount) ? parsed.petitionCount : 128,
+        petitioned: Boolean(parsed.petitioned),
+        badges: Array.isArray(parsed.badges) ? parsed.badges : ["初入城市守護者"],
+        selectedPinId: parsed.selectedPinId || "pin-1",
+        safeRouteOn: Boolean(parsed.safeRouteOn)
       };
     } catch {
-      return structuredClone(DEFAULT_STATE);
+      return getDefaultState();
     }
+  }
+
+  function getDefaultState() {
+    return {
+      coins: 200,
+      gems: 40,
+      avatarIndex: 0,
+      pins: structuredClone(INITIAL_PINS),
+      userReports: [],
+      petitionCount: 128,
+      petitioned: false,
+      badges: ["初入城市守護者"],
+      selectedPinId: "pin-1",
+      safeRouteOn: false
+    };
   }
 
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      // 忽略無痕模式儲存限制
+      // 忽略瀏覽器隱私模式儲存限制
     }
   }
 
-  /* ================= 通用工具 ================= */
-  function showToast(message) {
+  function showToast(msg) {
     const toast = document.getElementById("toast");
-    toast.textContent = message;
+    toast.textContent = msg;
     toast.classList.remove("hidden");
     clearTimeout(showToast._timer);
-    showToast._timer = setTimeout(() => {
-      toast.classList.add("hidden");
-    }, 2600);
+    showToast._timer = setTimeout(() => toast.classList.add("hidden"), 2600);
   }
 
-  async function copyText(text, successMsg) {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        showToast(successMsg);
-        return;
-      }
-    } catch {
-      // fallback below
+  function addReward(coinsDelta, gemsDelta, reason) {
+    state.coins += coinsDelta;
+    state.gems += gemsDelta;
+    saveState();
+    renderHud();
+    renderMeView();
+    const parts = [];
+    if (coinsDelta) parts.push(`+${coinsDelta} ⭐`);
+    if (gemsDelta) parts.push(`+${gemsDelta} 💎`);
+    showToast(`${reason}（獲得 ${parts.join(" ")}）`);
+  }
+
+  function unlockBadge(badgeName) {
+    if (!state.badges.includes(badgeName)) {
+      state.badges.push(badgeName);
+      saveState();
+      renderMeView();
     }
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
-      showToast(successMsg);
-    } catch {
-      showToast("請手動選取文字複製");
-    }
-    document.body.removeChild(ta);
   }
 
   function escapeHtml(str) {
@@ -144,1059 +262,533 @@
       .replace(/"/g, "&quot;");
   }
 
-  /* ================= 頂部模式與隱私切換 ================= */
-  function initTopControls() {
-    const btnApp = document.getElementById("btn-mode-app");
-    const btnPm = document.getElementById("btn-mode-pm");
-    const viewApp = document.getElementById("view-app");
-    const viewPm = document.getElementById("view-pm");
-
-    function switchMainMode(mode) {
-      const isApp = mode === "app";
-      btnApp.classList.toggle("active", isApp);
-      btnPm.classList.toggle("active", !isApp);
-      btnApp.setAttribute("aria-selected", String(isApp));
-      btnPm.setAttribute("aria-selected", String(!isApp));
-      viewApp.classList.toggle("hidden", !isApp);
-      viewPm.classList.toggle("hidden", isApp);
-    }
-
-    btnApp.addEventListener("click", () => switchMainMode("app"));
-    btnPm.addEventListener("click", () => switchMainMode("pm"));
-
-    // 手機 / 桌面視角切換
-    const frameBtn = document.getElementById("toggle-frame-btn");
-    const deviceFrame = document.getElementById("device-frame");
-    const frameIcon = document.getElementById("frame-btn-icon");
-    const frameLabel = document.getElementById("frame-btn-label");
-
-    frameBtn.addEventListener("click", () => {
-      const isMobile = deviceFrame.classList.toggle("mobile-mode");
-      frameIcon.textContent = isMobile ? "💻" : "📲";
-      frameLabel.textContent = isMobile ? "桌面視角" : "手機視角";
-      if (!viewApp.classList.contains("hidden")) {
-        switchMainMode("app");
-      }
-      showToast(isMobile ? "已切換為手機 App 預覽視角" : "已切換為桌面寬版視角");
+  /* ================= 頂部 HUD 與分頁 ================= */
+  function initHud() {
+    const avatars = document.querySelectorAll("#hud-avatar-switcher .voxel-avatar");
+    avatars.forEach((av) => {
+      av.addEventListener("click", () => {
+        state.avatarIndex = Number(av.dataset.av);
+        saveState();
+        renderHud();
+        renderMeView();
+        showToast("已切換守護者頭像造型！");
+      });
     });
 
-    // 隱私偽裝模式
-    const disguiseBtn = document.getElementById("privacy-disguise-btn");
-    const exitDisguiseBtn = document.getElementById("exit-disguise-btn");
-    const disguiseScreen = document.getElementById("disguise-screen");
-    const appShell = document.getElementById("app-shell");
-
-    function toggleDisguise(forceState) {
-      const shouldShow = typeof forceState === "boolean"
-        ? forceState
-        : disguiseScreen.classList.contains("hidden");
-      disguiseScreen.classList.toggle("hidden", !shouldShow);
-      appShell.classList.toggle("hidden", shouldShow);
-      disguiseScreen.setAttribute("aria-hidden", String(!shouldShow));
-    }
-
-    disguiseBtn.addEventListener("click", () => toggleDisguise(true));
-    exitDisguiseBtn.addEventListener("click", () => toggleDisguise(false));
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        const modal = document.getElementById("letter-modal");
-        if (!modal.classList.contains("hidden")) {
-          modal.classList.add("hidden");
-          return;
-        }
-        toggleDisguise();
-      }
+    document.querySelectorAll(".game-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.view;
+        document.querySelectorAll(".game-tab").forEach((t) => {
+          const active = t === tab;
+          t.classList.toggle("active", active);
+          t.setAttribute("aria-selected", String(active));
+        });
+        document.querySelectorAll(".view-section").forEach((sec) => {
+          sec.classList.toggle("active", sec.id === `view-${target}`);
+        });
+        if (target === "map") renderFullMap();
+        if (target === "me") renderMeView();
+      });
     });
 
-    // App 五大分頁切換
-    const navBtns = document.querySelectorAll(".app-nav-btn");
-    const panels = document.querySelectorAll(".tab-panel");
-    navBtns.forEach((btn) => {
+    document.getElementById("coin-pill-btn").addEventListener("click", () => {
+      openModal(
+        "⭐ 驕傲守護幣說明",
+        `<p>目前擁有 <strong>${state.coins} ⭐</strong> 守護幣！</p>
+         <ul>
+           <li>在地圖上驗證真實空間資訊：<strong>+10 ⭐</strong></li>
+           <li>提交一次匿名安全或友善空間回報：<strong>+25 ⭐</strong></li>
+           <li>參與公共環境改善連署：<strong>+15 ⭐</strong></li>
+         </ul>`
+      );
+    });
+
+    document.getElementById("gem-pill-btn").addEventListener("click", () => {
+      openModal(
+        "💎 勇氣寶石說明",
+        `<p>目前擁有 <strong>${state.gems} 💎</strong> 勇氣寶石！</p>
+         <ul>
+           <li>完成「③ 情境模擬，提升應變」演練：<strong>+10 💎</strong></li>
+           <li>練習「④ 旁觀者指南」暖心金句：<strong>+5 💎</strong></li>
+         </ul>`
+      );
+    });
+
+    document.getElementById("quick-sos-btn").addEventListener("click", () => {
+      openModal(
+        "🚨 緊急安全與支援專線",
+        `<p>若當下正面臨跟蹤、騷擾或人身安全威脅，請優先走入亮燈的超商、捷運站務室，並撥打：</p>
+         <ul>
+           <li><strong>110</strong>：緊急報案專線</li>
+           <li><strong>113</strong>：24 小時保護專線</li>
+           <li><strong>1925</strong>：衛福部 24 小時安心專線</li>
+           <li><strong>(02) 2392-1969</strong>：台灣同志諮詢熱線（週一至五 14:00–22:00）</li>
+         </ul>`
+      );
+    });
+
+    document.getElementById("cta-download-btn").addEventListener("click", () => {
+      openModal(
+        "🌈 SafePride 驕傲同行 — 立即體驗",
+        `<p>歡迎加入 <strong>「擁抱多元 × 共同守護」</strong> 行動！你現在使用的已經是完整可互動的 Web App 版本，可直接加入手機主畫面隨時使用：</p>
+         <ul>
+           <li>📱 <strong>iOS Safari</strong>：點選下方「分享」→「加入主畫面」</li>
+           <li>🤖 <strong>Android Chrome</strong>：點選右上選單 →「安裝應用程式」</li>
+         </ul>
+         <p style="margin-top:10px;color:#544e70;">更安全、友善的城市，從你我開始 ♡</p>`
+      );
+    });
+
+    document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+    document.getElementById("info-modal").addEventListener("click", (e) => {
+      if (e.target.id === "info-modal") closeModal();
+    });
+
+    renderHud();
+  }
+
+  function renderHud() {
+    document.getElementById("hud-coins").textContent = state.coins;
+    document.getElementById("hud-gems").textContent = state.gems;
+    document.querySelectorAll("#hud-avatar-switcher .voxel-avatar").forEach((av) => {
+      av.classList.toggle("active", Number(av.dataset.av) === state.avatarIndex);
+    });
+  }
+
+  function openModal(title, html) {
+    document.getElementById("modal-title").textContent = title;
+    document.getElementById("modal-body").innerHTML = html;
+    document.getElementById("info-modal").classList.remove("hidden");
+  }
+
+  function closeModal() {
+    document.getElementById("info-modal").classList.add("hidden");
+  }
+
+  /* ================= ① 友善地圖與安全路線 ================= */
+  function initHomeMap() {
+    document.querySelectorAll("#home-map-filters .map-filter-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const targetTab = btn.dataset.tab;
-        navBtns.forEach((b) => {
-          const active = b === btn;
-          b.classList.toggle("active", active);
-          b.setAttribute("aria-selected", String(active));
-        });
-        panels.forEach((p) => {
-          p.classList.toggle("active", p.id === `tab-${targetTab}`);
-        });
+        document.querySelectorAll("#home-map-filters .map-filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentMapFilter = btn.dataset.filter;
+        renderHomeMapPins();
+      });
+    });
+
+    const routeBtn = document.getElementById("toggle-safe-route-btn");
+    routeBtn.addEventListener("click", () => {
+      state.safeRouteOn = !state.safeRouteOn;
+      saveState();
+      renderSafeRouteState();
+      showToast(state.safeRouteOn ? "已避開黃色警示熱點，規劃發光安全返家路線！" : "已關閉路線規劃顯示");
+    });
+
+    document.getElementById("verify-pin-btn").addEventListener("click", () => {
+      const pin = state.pins.find((p) => p.id === state.selectedPinId);
+      if (!pin) return;
+      if (verifiedPinsSession.has(pin.id)) {
+        showToast("你剛才已經確認過這個地點囉！");
+        return;
+      }
+      verifiedPinsSession.add(pin.id);
+      pin.confirmations += 1;
+      saveState();
+      renderPinInspector();
+      addReward(10, 0, `感謝確認「${pin.name}」資訊`);
+    });
+
+    renderSafeRouteState();
+    renderHomeMapPins();
+    renderPinInspector();
+  }
+
+  function renderSafeRouteState() {
+    const path = document.getElementById("safe-route-path");
+    const pill = document.getElementById("route-status-pill");
+    const btn = document.getElementById("toggle-safe-route-btn");
+    path.classList.toggle("hidden", !state.safeRouteOn);
+    pill.classList.toggle("hidden", !state.safeRouteOn);
+    btn.classList.toggle("active", state.safeRouteOn);
+  }
+
+  function renderHomeMapPins() {
+    const layer = document.getElementById("home-map-pins-layer");
+    const filtered = state.pins.filter((p) => currentMapFilter === "all" || p.type === currentMapFilter);
+
+    layer.innerHTML = filtered.map((pin) => buildPinSvg(pin, pin.id === state.selectedPinId, 1)).join("");
+
+    layer.querySelectorAll(".map-pin-group").forEach((g) => {
+      g.addEventListener("click", () => {
+        state.selectedPinId = g.dataset.id;
+        saveState();
+        renderHomeMapPins();
+        renderPinInspector();
       });
     });
   }
 
-  /* ================= 分頁 1：準備度雷達與試水溫紀錄 ================= */
-  function initReadinessAndLogs() {
-    const dims = ["support", "independence", "trust", "emotion"];
-    dims.forEach((key) => {
-      const slider = document.getElementById(`slider-${key}`);
-      const valEl = document.getElementById(`val-${key}`);
-      slider.value = state.readiness[key];
-      valEl.textContent = state.readiness[key];
+  function buildPinSvg(pin, isSelected, scaleFactor) {
+    const ring = isSelected
+      ? `<circle cx="${pin.x}" cy="${pin.y}" r="${21 * scaleFactor}" fill="none" stroke="#4cffb3" stroke-width="2.5" stroke-dasharray="4 3" />`
+      : "";
 
-      slider.addEventListener("input", () => {
-        state.readiness[key] = Number(slider.value);
-        valEl.textContent = slider.value;
-        saveState();
-        renderReadiness();
-      });
+    if (pin.type === "friendly") {
+      return `
+        <g class="map-pin-group" data-id="${escapeHtml(pin.id)}">
+          ${ring}
+          <circle cx="${pin.x}" cy="${pin.y}" r="${14 * scaleFactor}" fill="#ff4e7e" stroke="#ffffff" stroke-width="2.2" />
+          <text x="${pin.x}" y="${pin.y + 4.5}" text-anchor="middle" font-size="${13 * scaleFactor}" fill="#ffffff">♥</text>
+          <title>${escapeHtml(pin.name)}</title>
+        </g>
+      `;
+    }
+    return `
+      <g class="map-pin-group" data-id="${escapeHtml(pin.id)}">
+        ${ring}
+        <polygon points="${pin.x},${pin.y - 15 * scaleFactor} ${pin.x + 15 * scaleFactor},${pin.y + 12 * scaleFactor} ${pin.x - 15 * scaleFactor},${pin.y + 12 * scaleFactor}"
+          fill="#ffd13b" stroke="#24193d" stroke-width="2" stroke-linejoin="round" />
+        <text x="${pin.x}" y="${pin.y + 8}" text-anchor="middle" font-size="${14 * scaleFactor}" font-weight="900" fill="#24193d">!</text>
+        <title>${escapeHtml(pin.name)}</title>
+      </g>
+    `;
+  }
+
+  function renderPinInspector() {
+    const pin = state.pins.find((p) => p.id === state.selectedPinId) || state.pins[0];
+    if (!pin) return;
+    document.getElementById("pi-title").textContent = pin.name;
+    document.getElementById("pi-desc").textContent = `${pin.desc}（已有 ${pin.confirmations} 人確認）`;
+    const badge = document.getElementById("pi-badge");
+    badge.className = `pi-badge ${pin.type}`;
+    badge.textContent = pin.type === "friendly" ? "❤️ 友善空間" : "⚠️ 安全疑慮熱點";
+  }
+
+  /* ================= ② 匿名回報與傾斜手機提交 ================= */
+  function initReportModule() {
+    document.getElementById("rep-prev-btn").addEventListener("click", () => {
+      currentReportTypeIdx = (currentReportTypeIdx - 1 + REPORT_TYPES.length) % REPORT_TYPES.length;
+      renderReportType();
     });
 
-    // 預設今天日期
-    const dateInput = document.getElementById("log-date");
-    dateInput.value = new Date().toISOString().slice(0, 10);
-
-    // 反應溫度選取器
-    const starBtns = document.querySelectorAll("#star-picker .star-btn");
-    const scoreInput = document.getElementById("log-score");
-    starBtns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        starBtns.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        scoreInput.value = btn.dataset.score;
-      });
+    document.getElementById("rep-next-btn").addEventListener("click", () => {
+      currentReportTypeIdx = (currentReportTypeIdx + 1) % REPORT_TYPES.length;
+      renderReportType();
     });
 
-    // 新增紀錄表單
-    const form = document.getElementById("probe-log-form");
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const date = document.getElementById("log-date").value;
-      const target = document.getElementById("log-target").value;
-      const topic = document.getElementById("log-topic").value;
-      const score = Number(document.getElementById("log-score").value);
-      const note = document.getElementById("log-note").value.trim();
+    document.getElementById("submit-report-btn").addEventListener("click", () => {
+      const repType = REPORT_TYPES[currentReportTypeIdx];
+      const zone = document.getElementById("rep-zone-select").value;
+      const note = document.getElementById("rep-note-input").value.trim() || `${repType.label}，請社群夥伴留意。`;
+      const baseCoord = ZONE_COORDS[zone] || { x: 260, y: 160 };
+      const jitterX = Math.round((Math.random() - 0.5) * 34);
+      const jitterY = Math.round((Math.random() - 0.5) * 26);
 
-      if (!note) return;
+      const newPin = {
+        id: `pin-user-${Date.now()}`,
+        type: repType.pinType,
+        name: `${zone}・${repType.pinType === "friendly" ? "友善新據點" : "社群安全提醒"}`,
+        zone,
+        desc: note,
+        confirmations: 1,
+        x: Math.max(40, Math.min(480, baseCoord.x + jitterX)),
+        y: Math.max(40, Math.min(290, baseCoord.y + jitterY))
+      };
 
-      state.probeLogs.push({
-        id: `log-${Date.now()}`,
-        date,
-        target,
-        topic,
-        score,
+      state.pins.push(newPin);
+      state.selectedPinId = newPin.id;
+      state.userReports.unshift({
+        id: newPin.id,
+        date: new Date().toISOString().slice(0, 10),
+        category: repType.label,
+        zone,
         note
       });
+
+      document.getElementById("rep-note-input").value = "";
+      unlockBadge("首次匿名守護者");
       saveState();
-      document.getElementById("log-note").value = "";
-      renderLogsAndAnalysis();
-      showToast("已新增試水溫紀錄，趨勢分析已更新！");
+      renderHomeMapPins();
+      renderPinInspector();
+      renderAnalytics();
+      addReward(25, 0, "匿名回報成功並已標記於地圖");
     });
 
-    // 還原示範資料
-    document.getElementById("reset-demo-logs-btn").addEventListener("click", () => {
-      state.probeLogs = structuredClone(DEFAULT_LOGS);
-      saveState();
-      renderLogsAndAnalysis();
-      showToast("已還原預設試水溫示範紀錄");
-    });
+    renderReportType();
+  }
 
-    // 對象篩選
-    document.querySelectorAll("#log-filter-pills .filter-pill").forEach((pill) => {
+  function renderReportType() {
+    const rep = REPORT_TYPES[currentReportTypeIdx];
+    document.getElementById("rep-type-label").textContent = rep.label;
+    document.getElementById("phone-mode-hint").textContent = rep.hint;
+    const iconBox = document.getElementById("phone-icon-box");
+    const isFriendly = rep.pinType === "friendly";
+    iconBox.classList.toggle("heart-mode", isFriendly);
+    iconBox.textContent = isFriendly ? "♥" : "!";
+  }
+
+  /* ================= ③ 情境模擬，提升應變 ================= */
+  function initSimulator() {
+    document.querySelectorAll("#sim-scenario-pills .scen-pill").forEach((pill) => {
       pill.addEventListener("click", () => {
-        document.querySelectorAll("#log-filter-pills .filter-pill").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll("#sim-scenario-pills .scen-pill").forEach((p) => p.classList.remove("active"));
         pill.classList.add("active");
-        activeFilterTarget = pill.dataset.target;
-        renderLogsAndAnalysis();
+        currentScenarioKey = pill.dataset.scen;
+        renderScenario();
       });
     });
 
-    renderReadiness();
-    renderLogsAndAnalysis();
+    document.querySelectorAll(".quick-pill-tag").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const box = document.getElementById("sim-guidance-box");
+        if (btn.dataset.quick === "deescalate") {
+          box.innerHTML = `<strong>🗣️ 應對言語騷擾三口訣</strong><p>1. 不與對方互罵對視 → 2. 快速往光亮有店員處移動 → 3. 事後記錄特徵並於 SafePride 匿名回報提醒大家。</p>`;
+        } else {
+          box.innerHTML = `<strong>📞 立即尋求協助管道</strong><p>進入便利商店或捷運站務台向工作人員求助；若遇跟蹤威脅直接撥打 110，並聯繫「我的」分頁內的熱線支持。</p>`;
+        }
+      });
+    });
+
+    renderScenario();
   }
 
-  function renderReadiness() {
-    const { support, independence, trust, emotion } = state.readiness;
-    const total = Math.round(((support + independence + trust + emotion) / 40) * 100);
+  function renderScenario() {
+    const sc = SCENARIOS[currentScenarioKey];
+    document.getElementById("sim-situation-text").textContent = sc.situation;
+    const wrap = document.getElementById("sim-options-wrap");
+    wrap.innerHTML = sc.options
+      .map((opt, i) => `<button type="button" class="sim-opt-btn" data-idx="${i}">${escapeHtml(opt.label)}</button>`)
+      .join("");
 
-    document.getElementById("readiness-total-num").textContent = total;
-    document.getElementById("hero-readiness-score").textContent = `${total}%`;
-
-    const stagePill = document.getElementById("readiness-stage-pill");
-    const titleEl = document.getElementById("readiness-advice-title");
-    const descEl = document.getElementById("readiness-advice-desc");
-
-    if (total < 50) {
-      stagePill.textContent = "🌱 蓄力保護期";
-      titleEl.textContent = "建議先強化支持網與退路";
-      descEl.textContent = "目前在經濟獨立或心理支撐上還有風險，建議先累積試水溫觀察與安心防護計畫，不必勉強現在攤牌。";
-    } else if (total < 75) {
-      stagePill.textContent = "🌤️ 溫柔試探期";
-      titleEl.textContent = "適合先從低壓力對象或書信切入";
-      descEl.textContent = "你已具備基本支撐力！可先從手足、摯友，或透過電影話題與日常互動觀察長輩反應，再用「緩衝框架」慢慢開門。";
-    } else {
-      stagePill.textContent = "☀️ 準備就緒期";
-      titleEl.textContent = "身心與退路條件成熟";
-      descEl.textContent = "你的內外資源相當穩固，建議先到「敘事轉譯室」產出專屬家書，並在「模擬演練室」預演回應後選擇安心時機開啟對話。";
-    }
-
-    renderRadarSvg({ support, independence, trust, emotion });
+    wrap.querySelectorAll(".sim-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        wrap.querySelectorAll(".sim-opt-btn").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        const opt = sc.options[Number(btn.dataset.idx)];
+        document.getElementById("sim-guidance-box").innerHTML = `
+          <strong>${opt.safe ? "✅ 推薦安全策略" : "⚠️ 風險提示與建議"}</strong>
+          <p>${escapeHtml(opt.guidance)}</p>
+        `;
+        unlockBadge("應變演練達人");
+        addReward(0, 10, "完成情境應變練習");
+      });
+    });
   }
 
-  function renderRadarSvg({ support, independence, trust, emotion }) {
-    const cx = 85;
-    const cy = 85;
-    const maxR = 54;
-    const values = [support / 10, independence / 10, trust / 10, emotion / 10];
-    // 上(支持網), 右(獨立度), 下(關係感), 左(情緒穩)
-    const dirs = [
-      [0, -1],
-      [1, 0],
-      [0, 1],
-      [-1, 0]
+  /* ================= ④ 旁觀者指南，共同守護 ================= */
+  function initBystander() {
+    document.querySelectorAll("#bystander-tabs .by-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#bystander-tabs .by-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentBystanderKey = btn.dataset.by;
+        renderBystander();
+      });
+    });
+
+    document.getElementById("copy-bystander-btn").addEventListener("click", async () => {
+      const guide = BYSTANDER_GUIDES[currentBystanderKey];
+      try {
+        await navigator.clipboard.writeText(`${guide.bubble} ${guide.script}`);
+      } catch {
+        // 靜默處理剪貼簿限制
+      }
+      unlockBadge("暖心旁觀守護者");
+      addReward(0, 5, "已練習旁觀者暖心守護金句");
+    });
+
+    renderBystander();
+  }
+
+  function renderBystander() {
+    const g = BYSTANDER_GUIDES[currentBystanderKey];
+    document.getElementById("bystander-bubble").textContent = g.bubble;
+    document.getElementById("bystander-script").textContent = g.script;
+  }
+
+  /* ================= ⑤ 數據分析，推動改變 ================= */
+  function initAnalytics() {
+    document.getElementById("petition-btn").addEventListener("click", () => {
+      if (state.petitioned) {
+        showToast("你已經參與過本次增設照明與友善標章連署，謝謝你的力量！");
+        return;
+      }
+      state.petitioned = true;
+      state.petitionCount += 1;
+      unlockBadge("城市環境推動者");
+      saveState();
+      renderAnalytics();
+      addReward(15, 0, "完成城市環境改善連署");
+    });
+
+    renderAnalytics();
+  }
+
+  function renderAnalytics() {
+    const friendlyCount = state.pins.filter((p) => p.type === "friendly").length;
+    const warningCount = state.pins.filter((p) => p.type === "warning").length;
+    document.getElementById("kpi-friendly-count").textContent = friendlyCount;
+    document.getElementById("kpi-warning-count").textContent = warningCount;
+    document.getElementById("kpi-petition-count").textContent = state.petitionCount;
+
+    const chartSvg = document.getElementById("analytics-chart-svg");
+    const bars = [
+      { label: "8月", val: 38, color: "#ff5d78" },
+      { label: "9月", val: 48, color: "#ff9a3c" },
+      { label: "10月", val: 62, color: "#ffd13b" },
+      { label: "11月", val: Math.min(92, 68 + state.userReports.length * 6), color: "#45d37b" },
+      { label: "友善目標", val: 88, color: "#3aa8ff" }
     ];
 
-    const gridLevels = [0.33, 0.66, 1];
-    const gridPolys = gridLevels
-      .map((lv) => {
-        const pts = dirs.map(([dx, dy]) => `${(cx + dx * maxR * lv).toFixed(1)},${(cy + dy * maxR * lv).toFixed(1)}`).join(" ");
-        return `<polygon points="${pts}" fill="none" stroke="rgba(164,127,106,0.22)" stroke-width="1" />`;
+    const barWidth = 32;
+    const gap = 20;
+    const startX = 20;
+    const baseBottom = 76;
+
+    const barsSvg = bars
+      .map((b, i) => {
+        const h = Math.round((b.val / 100) * 58);
+        const x = startX + i * (barWidth + gap);
+        const y = baseBottom - h;
+        return `
+          <rect x="${x}" y="${y}" width="${barWidth}" height="${h}" rx="6" fill="${b.color}" opacity="0.9" />
+          <text x="${x + barWidth / 2}" y="${baseBottom + 14}" text-anchor="middle" font-size="10" font-weight="700" fill="#544e70">${b.label}</text>
+        `;
       })
       .join("");
 
-    const dataPts = values
-      .map((v, idx) => {
-        const [dx, dy] = dirs[idx];
-        return `${(cx + dx * maxR * v).toFixed(1)},${(cy + dy * maxR * v).toFixed(1)}`;
+    const linePts = bars
+      .map((b, i) => {
+        const h = Math.round((b.val / 100) * 58);
+        const x = startX + i * (barWidth + gap) + barWidth / 2;
+        const y = baseBottom - h - 4;
+        return `${x},${y}`;
       })
       .join(" ");
 
-    const dots = values
-      .map((v, idx) => {
-        const [dx, dy] = dirs[idx];
-        const x = (cx + dx * maxR * v).toFixed(1);
-        const y = (cy + dy * maxR * v).toFixed(1);
-        return `<circle cx="${x}" cy="${y}" r="3.5" fill="#e06d53" stroke="#fff" stroke-width="1.5" />`;
-      })
-      .join("");
-
-    const svg = `
-      <svg viewBox="0 0 170 170" width="170" height="170" role="img" aria-label="四維度準備度雷達圖">
-        ${gridPolys}
-        <line x1="${cx}" y1="${cy - maxR}" x2="${cx}" y2="${cy + maxR}" stroke="rgba(164,127,106,0.2)" />
-        <line x1="${cx - maxR}" y1="${cy}" x2="${cx + maxR}" y2="${cy}" stroke="rgba(164,127,106,0.2)" />
-        <polygon points="${dataPts}" fill="rgba(224,109,83,0.26)" stroke="#e06d53" stroke-width="2" />
-        ${dots}
-        <text x="${cx}" y="15" text-anchor="middle" font-size="10.5" font-weight="600" fill="#5d534f">支持網</text>
-        <text x="155" y="${cy + 3}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#5d534f">獨立</text>
-        <text x="${cx}" y="162" text-anchor="middle" font-size="10.5" font-weight="600" fill="#5d534f">關係感</text>
-        <text x="15" y="${cy + 3}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#5d534f">情緒</text>
-      </svg>
+    chartSvg.innerHTML = `
+      ${barsSvg}
+      <polyline points="${linePts}" fill="none" stroke="#24193d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
     `;
-    document.getElementById("readiness-radar-svg").innerHTML = svg;
   }
 
-  function renderLogsAndAnalysis() {
-    document.getElementById("hero-log-count").textContent = `${state.probeLogs.length} 筆`;
-
-    const filtered = state.probeLogs
-      .filter((log) => activeFilterTarget === "全部" || log.target === activeFilterTarget)
-      .slice()
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    renderTrendChart(filtered);
-    renderDiagnosis(filtered);
-    renderLogCards(filtered);
+  /* ================= 視圖 2：全區地圖探索 ================= */
+  function initFullMap() {
+    document.getElementById("map-search-input").addEventListener("input", renderFullMap);
+    document.getElementById("map-view-route-btn").addEventListener("click", () => {
+      state.safeRouteOn = !state.safeRouteOn;
+      saveState();
+      renderSafeRouteState();
+      renderFullMap();
+    });
   }
 
-  function renderTrendChart(logs) {
-    const container = document.getElementById("trend-chart-container");
-    const avgBadge = document.getElementById("avg-temp-badge");
+  function renderFullMap() {
+    const query = (document.getElementById("map-search-input").value || "").trim().toLowerCase();
+    const filtered = state.pins.filter(
+      (p) => !query || p.name.toLowerCase().includes(query) || p.zone.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query)
+    );
 
-    if (logs.length === 0) {
-      avgBadge.textContent = "平均溫度：尚無紀錄";
-      container.innerHTML = `<p style="color:#8d7f78;font-size:13px;padding:36px 0;text-align:center;">此篩選條件目前沒有紀錄，請從上方新增一筆日常觀察。</p>`;
-      return;
-    }
+    document.getElementById("map-list-count").textContent = filtered.length;
 
-    const avg = (logs.reduce((sum, item) => sum + item.score, 0) / logs.length).toFixed(1);
-    avgBadge.textContent = `平均溫度：${avg} / 5.0`;
+    const fullSvg = document.getElementById("full-city-map-svg");
+    const routeSvg = state.safeRouteOn
+      ? `<path class="safe-route-path" d="M 96 310 L 180 310 L 180 258 L 385 258 L 385 126 L 495 126 L 495 72" fill="none" stroke="#4cffb3" stroke-width="6" stroke-dasharray="10 6" />`
+      : "";
 
-    const w = 480;
-    const h = 170;
-    const padL = 34;
-    const padR = 24;
-    const padT = 18;
-    const padB = 28;
-    const innerW = w - padL - padR;
-    const innerH = h - padT - padB;
-
-    const gridLines = [1, 2, 3, 4, 5]
-      .map((score) => {
-        const y = padT + innerH - ((score - 1) / 4) * innerH;
-        return `
-          <line x1="${padL}" y1="${y.toFixed(1)}" x2="${w - padR}" y2="${y.toFixed(1)}" stroke="rgba(164,127,106,0.16)" stroke-dasharray="3 3" />
-          <text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10.5" fill="#8d7f78">${score}</text>
-        `;
-      })
+    const scaledPins = filtered
+      .map((p) => buildPinSvg({ ...p, x: Math.round(p.x * 1.22), y: Math.round(p.y * 1.14) }, p.id === state.selectedPinId, 1.08))
       .join("");
 
-    const points = logs.map((log, idx) => {
-      const x = logs.length === 1 ? padL + innerW / 2 : padL + (idx / (logs.length - 1)) * innerW;
-      const y = padT + innerH - ((log.score - 1) / 4) * innerH;
-      return { x, y, log };
+    fullSvg.innerHTML = `
+      <rect width="640" height="380" rx="14" fill="#0e2a4a" />
+      <g stroke="#52d1ff" stroke-width="5" stroke-opacity="0.4" stroke-linecap="round">
+        <line x1="180" y1="14" x2="180" y2="366" />
+        <line x1="385" y1="14" x2="385" y2="366" />
+        <line x1="14" y1="126" x2="626" y2="126" />
+        <line x1="14" y1="258" x2="626" y2="258" />
+      </g>
+      ${routeSvg}
+      ${scaledPins}
+    `;
+
+    fullSvg.querySelectorAll(".map-pin-group").forEach((g) => {
+      g.addEventListener("click", () => {
+        state.selectedPinId = g.dataset.id;
+        saveState();
+        renderFullMap();
+        renderPinInspector();
+      });
     });
 
-    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-    const areaPath =
-      points.length > 1
-        ? `${linePath} L${points[points.length - 1].x.toFixed(1)},${padT + innerH} L${points[0].x.toFixed(1)},${padT + innerH} Z`
-        : "";
-
-    const dotsAndLabels = points
-      .map((p) => {
-        const shortDate = p.log.date.slice(5);
-        return `
-          <g>
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#e06d53" stroke="#ffffff" stroke-width="2">
-              <title>${escapeHtml(p.log.date)}｜${escapeHtml(p.log.target)}｜${escapeHtml(p.log.topic)}：${p.log.score}分</title>
-            </circle>
-            <text x="${p.x.toFixed(1)}" y="${h - 8}" text-anchor="middle" font-size="10" fill="#655954">${shortDate}</text>
-          </g>
-        `;
-      })
-      .join("");
-
-    container.innerHTML = `
-      <svg viewBox="0 0 ${w} ${h}" width="100%" height="175" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="tempAreaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e06d53" stop-opacity="0.28" />
-            <stop offset="100%" stop-color="#e06d53" stop-opacity="0.02" />
-          </linearGradient>
-        </defs>
-        ${gridLines}
-        ${areaPath ? `<path d="${areaPath}" fill="url(#tempAreaGrad)" />` : ""}
-        ${points.length > 1 ? `<path d="${linePath}" fill="none" stroke="#e06d53" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />` : ""}
-        ${dotsAndLabels}
-      </svg>
-    `;
-  }
-
-  function renderDiagnosis(logs) {
-    const box = document.getElementById("diagnosis-report-content");
-    const tagsEl = document.getElementById("best-topic-tags");
-
-    if (logs.length === 0) {
-      box.innerHTML = `<p>累積 2 筆以上的試水溫互動紀錄後，系統將自動為您產出關係氣象趨勢與切入建議。</p>`;
-      tagsEl.innerHTML = `<span class="topic-tag">尚無資料</span>`;
-      return;
-    }
-
-    const avg = logs.reduce((s, l) => s + l.score, 0) / logs.length;
-    const first = logs[0].score;
-    const last = logs[logs.length - 1].score;
-    const trendDelta = last - first;
-
-    let trendSummary = "態度維持平穩";
-    if (logs.length >= 2 && trendDelta > 0) {
-      trendSummary = `呈正向回暖趨勢（由 ${first} 分升至 ${last} 分）`;
-    } else if (logs.length >= 2 && trendDelta < 0) {
-      trendSummary = `近期出現較多顧慮（由 ${first} 分降至 ${last} 分）`;
-    }
-
-    let actionTip = "";
-    if (avg >= 3.8) {
-      actionTip = "對象整體態度偏友善且具備對話空間，適合進入「敘事轉譯室」採用【愛與信任框架】或【緩衝書信】正式開啟對話。";
-    } else if (avg >= 2.8) {
-      actionTip = "對方處於「觀望或資訊不足」階段，建議避免在離家最後一刻倉促開口（門把效應），改以輕鬆影視話題持續升溫，或先向支持度最高的手足/朋友結盟。";
-    } else {
-      actionTip = "目前對象防衛感仍較高，強烈建議先保護自身心理安全與經濟退路，勿急於正面攤牌，先閱讀「安心防護網」建立支持資源。";
-    }
-
-    box.innerHTML = `
-      <p><strong>對象「${escapeHtml(activeFilterTarget)}」近期觀測（共 ${logs.length} 筆）：</strong>${trendSummary}，平均接納溫度為 <strong>${avg.toFixed(1)} / 5.0</strong>。</p>
-      <p>${actionTip}</p>
-    `;
-
-    // 找出平均分數最高的話題
-    const topicStats = {};
-    logs.forEach((l) => {
-      if (!topicStats[l.topic]) topicStats[l.topic] = { sum: 0, count: 0 };
-      topicStats[l.topic].sum += l.score;
-      topicStats[l.topic].count += 1;
-    });
-
-    const sortedTopics = Object.entries(topicStats)
-      .map(([topic, data]) => ({ topic, avg: data.sum / data.count }))
-      .sort((a, b) => b.avg - a.avg)
-      .slice(0, 3);
-
-    tagsEl.innerHTML = sortedTopics
-      .map((t) => `<span class="topic-tag">${escapeHtml(t.topic)} (${t.avg.toFixed(1)}★)</span>`)
-      .join("");
-  }
-
-  function renderLogCards(logs) {
-    const listEl = document.getElementById("probe-logs-list");
-    if (logs.length === 0) {
-      listEl.innerHTML = `<p style="color:#8d7f78;font-size:13px;">尚無符合條件的試水溫紀錄。</p>`;
-      return;
-    }
-
-    const scoreEmoji = { 1: "1❄️ 排斥", 2: "2☁️ 尷尬", 3: "3🌤️ 中立", 4: "4☀️ 友善", 5: "5🌈 支持" };
-
-    listEl.innerHTML = logs
-      .slice()
-      .reverse()
+    const listEl = document.getElementById("full-map-locations-list");
+    listEl.innerHTML = filtered
       .map(
-        (log) => `
-      <article class="log-item-card">
-        <div class="log-item-top">
-          <div class="log-meta-badges">
-            <span class="badge-target">${escapeHtml(log.target)}</span>
-            <span class="badge-topic">${escapeHtml(log.topic)}</span>
-          </div>
-          <span class="badge-score">${scoreEmoji[log.score] || `${log.score}分`}</span>
+        (p) => `
+      <div class="loc-card" data-id="${escapeHtml(p.id)}">
+        <div class="loc-card-top">
+          <span>${p.type === "friendly" ? "❤️" : "⚠️"} ${escapeHtml(p.name)}</span>
+          <span>👍 ${p.confirmations}</span>
         </div>
-        <div class="log-date">${escapeHtml(log.date)}</div>
-        <p class="log-note">${escapeHtml(log.note)}</p>
-        <button type="button" class="log-delete-btn" data-id="${escapeHtml(log.id)}">刪除紀錄</button>
-      </article>
+        <p>${escapeHtml(p.desc)}</p>
+      </div>
     `
       )
       .join("");
 
-    listEl.querySelectorAll(".log-delete-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        state.probeLogs = state.probeLogs.filter((l) => l.id !== btn.dataset.id);
+    listEl.querySelectorAll(".loc-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        state.selectedPinId = card.dataset.id;
         saveState();
-        renderLogsAndAnalysis();
-        showToast("已刪除該筆紀錄");
+        renderFullMap();
       });
     });
   }
 
-  /* ================= 分頁 2：敘事轉譯室（框架理論） ================= */
-  const TARGET_LABELS = {
-    traditional_parents: { call: "爸媽", opening: "爸、媽：" },
-    anxious_parents: { call: "爸媽", opening: "親愛的爸媽：" },
-    siblings: { call: "哥／姊／弟／妹", opening: "嗨，最挺我的家人：" },
-    close_friend: { call: "你", opening: "親愛的好朋友：" },
-    workplace: { call: "您／夥伴", opening: "嗨，" }
-  };
+  /* ================= 視圖 3：我的守護護照 ================= */
+  function renderMeView() {
+    document.getElementById("passport-avatar-display").textContent = AVATAR_EMOJIS[state.avatarIndex] || "👑";
+    document.getElementById("me-coins").textContent = state.coins;
+    document.getElementById("me-gems").textContent = state.gems;
+    document.getElementById("me-report-count").textContent = state.userReports.length;
 
-  const FEAR_DATA = {
-    lonely: {
-      risk: "「反正我以後就是不會結婚生小孩，你們不要再催我了！」",
-      safe: "「我也很看重家與陪伴，其實我已經有了互相照顧、一起規劃未來的伴侶，只是對方跟我一樣是同性。」",
-      why: "長輩催婚背後往往是「怕你老了沒人照顧」。將焦點轉回「我有照顧好自己、也有穩定伴侶陪伴」，能直接安撫他們對未來的未知恐懼。",
-      paragraph: "我知道你們常問我感情的事，其實是因為擔心我未來會孤單、怕沒人照顧。但我想讓你們安心，我一直很認真過生活，也遇到了一個願意跟我互相扶持、一起努力的伴侶，只是他剛好和我同性別。"
-    },
-    reputation: {
-      risk: "「這是我的自由，別人怎麼講我才不在乎，你們也不用管親戚怎麼說！」",
-      safe: "「我知道我們家很在乎親友怎麼看，所以我先不急著對外公開，我們可以一起討論讓彼此最舒服的步調。」",
-      why: "傳統長輩面臨的是「面子與宗族壓力」。主動釋出『我會顧慮你們的步調、不會逼你們立刻向親戚交代』，能瞬間卸除一半的防備。",
-      paragraph: "我理解長輩在親友圈裡有很多無形的壓力，所以我完全不強求你們馬上向任何人解釋或公開。對我而言，你們的感受比外面的眼光更重要，我們可以按照彼此都安心的節奏慢慢來。"
-    },
-    discrimination: {
-      risk: "「現在時代不同了，法律都通過同婚了，你們為什麼要把我想得那麼可憐？」",
-      safe: "「我知道你們是怕我在外面受委屈、被貼標籤，但你們給我的愛跟教養，已經讓我很有力量把生活過得很踏實。」",
-      why: "先接住父母『怕孩子受傷』的善意，再把這份擔憂轉化為『正因為有家的支持，我才更有力量』，避免陷入世代觀念爭辯。",
-      paragraph: "我也知道你們可能會擔心我在社會上會不會受苦、會不會被異樣眼光對待。其實你們一直以來給我很多安全感與教養，現在的我工作穩定、身邊也有友善的朋友圈，台灣現在也有完整的婚姻與醫療法律保障，請不要替我太擔心。"
-    },
-    confused: {
-      risk: "「你們根本不懂就不要亂講，我從以前就是這樣了！」",
-      safe: "「這不是一時的衝動，我其實在心裡思考了好幾年，今天想跟你分享，是因為不想在最愛的人面前假裝。」",
-      why: "資訊落差常讓對方誤以為是『壓力太大或被影響』。強調『經過長時間自我確認』與『不願對重要的人戴面具』，能增加真實性與尊重感。",
-      paragraph: "這並不是最近才發生的事情，也不是受誰影響。其實過去這幾年我反覆思考與確認了很久，之所以現在想讓你知道，是因為你在我生命裡非常重要，我不希望每次相處都要小心翼翼地隱藏真實的自己。"
-    }
-  };
-
-  const FRAME_DATA = {
-    love_trust: {
-      badge: "🌱 愛與信任框架",
-      intro: "寫這段話／開口前，我猶豫了很久，不是因為不信任你們，而是因為太在乎你們的感受，深怕讓你們擔心。但正因為你們是我最親近、最珍惜的家人，我希望我們之間不需要一直隔著一層說不出口的距離。",
-      closing: "不論你們聽完有什麼疑問，我都願意慢慢聊。對我來說，坦白這件事，只是想邀請你們走進我真正的生活裡，讓我們繼續做彼此最重要的家人。"
-    },
-    stability: {
-      badge: "🏡 穩定與幸福框架",
-      intro: "想跟你們分享一個關於我生活的近況。這幾年我在工作與生活上都努力站穩腳步，也越來越知道什麼樣的人生讓自己感到踏實和快樂。",
-      closing: "其實除了伴侶的性別之外，我的生活目標跟大家沒有什麼不同——同樣想好好工作、孝順你們、經營一個溫暖安穩的家。希望你們看見現在的我，是真的過得很好、很幸福。"
-    },
-    buffer_letter: {
-      badge: "🕰️ 緩衝留白框架（破解門把效應）",
-      intro: "之所以選擇用文字而不是在趕時間出門前匆忙開口，是因為我希望我們都能在沒有壓力的狀態下讀這件事，不必急著在幾分鐘內消化所有的情緒。",
-      closing: "最後想特別說一聲：你們完全不需要現在就給我任何答案或表態！如果感到震驚或一時不知如何回應，都非常正常。我有附上一份給父母看的溫柔小百科，等你們準備好想聊的時候，我隨時都在。"
-    }
-  };
-
-  function initTranslator() {
-    bindChipGroup("tr-target-group", "target");
-    bindChipGroup("tr-fear-group", "fear");
-
-    document.querySelectorAll("#tr-frame-group .frame-option").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#tr-frame-group .frame-option").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        translatorState.frame = btn.dataset.value;
-        updateTranslatorView();
-      });
-    });
-
-    const toneSlider = document.getElementById("tone-slider");
-    const toneLabels = { 1: "含蓄試探", 2: "溫柔堅定", 3: "深情書信" };
-    toneSlider.addEventListener("input", () => {
-      translatorState.tone = Number(toneSlider.value);
-      document.getElementById("tone-label").textContent = toneLabels[translatorState.tone];
-      updateTranslatorView();
-    });
-
-    document.getElementById("regenerate-script-btn").addEventListener("click", () => {
-      updateTranslatorView();
-      showToast("已重新生成系統建議草稿");
-    });
-
-    document.getElementById("copy-script-btn").addEventListener("click", () => {
-      const text = document.getElementById("generated-script").value;
-      copyText(text, "已複製專屬出櫃講稿到剪貼簿");
-    });
-
-    // 預覽信件 Modal
-    const modal = document.getElementById("letter-modal");
-    document.getElementById("preview-letter-btn").addEventListener("click", () => {
-      document.getElementById("letter-modal-body").textContent = document.getElementById("generated-script").value;
-      modal.classList.remove("hidden");
-    });
-    document.getElementById("close-letter-modal").addEventListener("click", () => modal.classList.add("hidden"));
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.add("hidden");
-    });
-    document.getElementById("modal-copy-btn").addEventListener("click", () => {
-      copyText(document.getElementById("letter-modal-body").textContent, "已複製這封溫柔的信");
-    });
-
-    updateTranslatorView();
-  }
-
-  function bindChipGroup(groupId, stateKey) {
-    const group = document.getElementById(groupId);
-    group.querySelectorAll(".chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        group.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
-        chip.classList.add("active");
-        translatorState[stateKey] = chip.dataset.value;
-        updateTranslatorView();
-      });
-    });
-  }
-
-  function updateTranslatorView() {
-    const fear = FEAR_DATA[translatorState.fear];
-    const frame = FRAME_DATA[translatorState.frame];
-    const targetInfo = TARGET_LABELS[translatorState.target];
-
-    document.getElementById("active-frame-badge").textContent = frame.badge;
-    document.getElementById("compare-risk-text").textContent = fear.risk;
-    document.getElementById("compare-safe-text").textContent = fear.safe;
-    document.getElementById("compare-why-text").textContent = fear.why;
-
-    let coreReveal = "其實，我喜歡的是同性，這是我真實且穩定的一部分。";
-    if (translatorState.tone === 1) {
-      coreReveal = "其實一直有件事想慢慢跟你分享——關於我的感情生活，我更心動、想走下去的對象，是跟我一樣的同性。";
-    } else if (translatorState.tone === 3) {
-      coreReveal = "我想很誠實地告訴你們，我的性傾向是同性。這份認同讓我學會更認識自己，也更珍惜身邊真正愛我的人。";
-    }
-
-    const workplaceAdjust =
-      translatorState.target === "workplace"
-        ? "在工作與團隊合作上我一樣保持專業，分享這件事只是希望日常聊到家庭與休假時不必刻意閃躲。"
-        : fear.paragraph;
-
-    const draft = `${targetInfo.opening}
-
-${frame.intro}
-
-${coreReveal}
-
-${workplaceAdjust}
-
-${frame.closing}`;
-
-    document.getElementById("generated-script").value = draft;
-  }
-
-  /* ================= 分頁 3：模擬演練室 ================= */
-  const SCENARIOS = {
-    mom: {
-      avatar: "👩",
-      name: "媽媽（關心但傳統）",
-      startTemp: 45,
-      turns: [
-        {
-          partnerLine: "「你是不是最近工作壓力太大、太累了，只是還沒遇到對的異性而已？不要亂想啦。」",
-          choices: [
-            {
-              tag: "情緒反擊型",
-              text: "「媽你根本不懂，不要每次都否定我的感受！」",
-              delta: -15,
-              reply: "「我哪有否定你！我還不是為你好，你怎麼說話這麼衝⋯⋯」",
-              coach: "當我們直接說「你不懂」時，對方會感受到被指責，防衛心立刻拉高，對話容易演變成情緒對立。"
-            },
-            {
-              tag: "退縮逃避型",
-              text: "「好啦好啦，沒事，可能真的是我太累了，當我沒說。」",
-              delta: -5,
-              reply: "「對嘛，早點休息不要胡思亂想，週末記得回家吃飯。」",
-              coach: "這正是典型的「門把效應退縮」——為了避免當下衝突而吞回真相，短期看似平靜，長期卻加深內心的愧疚與孤單。"
-            },
-            {
-              tag: "同理＋框架轉譯",
-              text: "「媽，我知道你是擔心我只是迷惘或太累才這樣說。這件事我想了很久，不是一時的壓力，我是認真覺得這樣最真實快樂。」",
-              delta: +18,
-              reply: "「（嘆口氣，語氣放軟）你真的想了很久喔⋯⋯那你這樣在外面會不會很辛苦？」",
-              coach: "滿分示範！先肯定媽媽「擔心你」的善意（降低防衛），再溫和堅定地澄清「這不是一時衝動」，成功把對話導向真正的關心。"
-            }
-          ]
-        },
-        {
-          partnerLine: "「可是⋯⋯我還是很怕你老了孤零零一個人，以後生病沒人照顧怎麼辦？」",
-          choices: [
-            {
-              tag: "理論說教型",
-              text: "「現在異性戀離婚率也這麼高，結婚又不一定有人照顧！」",
-              delta: -8,
-              reply: "「你幹嘛扯到別人，我是在擔心你耶！」",
-              coach: "用反駁邏輯去回擊父母的焦慮，雖然道理沒錯，卻會讓父母覺得「你沒在聽我擔心你」。"
-            },
-            {
-              tag: "穩定幸福框架",
-              text: "「媽我懂你的擔心。其實台灣現在也能合法結婚、簽醫療同意書了，我也有好好存錢照顧身體，將來一樣可以有伴互相扶持。」",
-              delta: +20,
-              reply: "「原來現在醫院都可以簽同意書了喔⋯⋯好啦，你有在為以後打算，媽媽比較放心一點。」",
-              coach: "運用「穩定與幸福框架」，用長輩聽得懂的具體生活保障（醫療、存錢、互相照顧）回答焦慮，大幅提升安全感！"
-            },
-            {
-              tag: "沉默不語",
-              text: "「（低頭不說話，氣氛陷入沉默）」",
-              delta: -5,
-              reply: "「你看，連你自己都答不出來對不對⋯⋯」",
-              coach: "沉默會讓長輩把想像力往最壞的方向填補。哪怕還沒想好細節，也可以先表達「我會好好照顧自己」。"
-            }
-          ]
-        },
-        {
-          partnerLine: "「唉，我腦袋有點亂，不知道怎麼一下接受這麼多事情⋯⋯」",
-          choices: [
-            {
-              tag: "逼問表態型",
-              text: "「那你現在到底是支持還是反對？給我一個答案。」",
-              delta: -18,
-              reply: "「你現在一定要逼我馬上表態嗎？我需要時間不行嗎！」",
-              coach: "在對方情緒過載時要求立刻表態，最容易造成關係撕裂。剛出櫃時，父母需要的是消化空間。"
-            },
-            {
-              tag: "緩衝留白框架",
-              text: "「媽，你不用今天馬上理解或回答我！我準備了一個給爸媽看的小介紹，你慢慢看就好，我們永遠是家人。」",
-              delta: +22,
-              reply: "「謝謝你體諒媽媽⋯⋯那你傳給我，我晚上有空慢慢看。早點睡喔。」",
-              coach: "完美運用「緩衝留白框架」！把時間與安全感留給對方，搭配「親友轉譯包」，這是一場極具保護力的出櫃對話。"
-            },
-            {
-              tag: "匆忙離場",
-              text: "「沒關係那我先回房間了。」",
-              delta: +2,
-              reply: "「嗯⋯⋯好，晚安。」",
-              coach: "適時暫停是好的，但若能多加一句「不用急著回答，我永遠愛你」及後續閱讀資源，溫度會更穩定。"
-            }
-          ]
-        }
-      ]
-    },
-    dad: {
-      avatar: "👨",
-      name: "爸爸（沉默寡言・重視面子）",
-      startTemp: 40,
-      turns: [
-        {
-          partnerLine: "「（沉默了三十秒，看著電視）⋯⋯這件事我們自己家裡知道就好，千萬不要跟親戚或鄰居講。」",
-          choices: [
-            {
-              tag: "直接衝撞型",
-              text: "「為什麼不能講？我又沒有做錯事，憑什麼要躲躲藏藏！」",
-              delta: -15,
-              reply: "「我說不要講就是不要講，你要讓大家在背後指指點點嗎！」",
-              coach: "爸爸的第一反應常是在保護家庭免於社會壓力。直接質疑「躲藏」容易踩中他的保護欲與面子防衛。"
-            },
-            {
-              tag: "顧慮步調框架",
-              text: "「爸，我懂你在乎家人的感受，我今天先告訴你，是因為你對我很重要。對外要不要說，我都會尊重你跟媽的步調。」",
-              delta: +20,
-              reply: "「（點點頭，表情稍微鬆動）⋯⋯你有想到家裡就好。」",
-              coach: "先給爸爸「你對我很重要」的尊榮感，並把「對外節奏控制權」交給他一起決定，防衛立刻下降。"
-            },
-            {
-              tag: "敷衍帶過",
-              text: "「喔，好。」",
-              delta: -3,
-              reply: "「（繼續低頭看電視，不再開口）」",
-              coach: "雖然避免了衝突，但也錯失了向爸爸表達「我是因為信任你才告訴你」的連結機會。"
-            }
-          ]
-        },
-        {
-          partnerLine: "「那你工作跟生活⋯⋯同事會不會對你怎樣？以後經濟沒問題嗎？」",
-          choices: [
-            {
-              tag: "穩定生活框架",
-              text: "「爸你放心，我工作很穩定，主管跟同事都很專業。我跟伴侶也有規劃理財，不會讓你跟我媽操心。」",
-              delta: +22,
-              reply: "「嗯，男人最重要的是把日子過穩、靠自己站得住腳。」",
-              coach: "台灣爸爸常透過關心「工作與經濟」來表達愛。用務實穩定的生活狀態回應，最能讓父親安心。"
-            },
-            {
-              tag: "抱怨職場型",
-              text: "「唉呀現在社會還是有很多偏見啦，有時候也蠻累的。」",
-              delta: -8,
-              reply: "「你看吧！我就說這條路很難走！」",
-              coach: "在剛出櫃當下過度放大外部困難，會加劇父親「走這條路很辛苦」的焦慮感。"
-            },
-            {
-              tag: "轉移話題",
-              text: "「不聊這個了，明天不是要去看醫生嗎？」",
-              delta: -4,
-              reply: "「⋯⋯嗯，明天早上九點。」",
-              coach: "太快切換話題容易留下未解的尷尬，至少先簡短讓爸爸安心會更好。"
-            }
-          ]
-        },
-        {
-          partnerLine: "「好啦，這件事我知道了。今天先這樣，去休息吧。」",
-          choices: [
-            {
-              tag: "愛與留白結尾",
-              text: "「謝謝爸願意聽我說。不管怎樣我永遠是你兒子，如果你之後想多了解，我有整理一些資料，想看再跟我要。」",
-              delta: +18,
-              reply: "「（拍拍你的肩膀）⋯⋯好啦，去喝杯水早點睡。」",
-              coach: "對不善言辭的父親而言，「願意聽完」本身就是很大的接納。留下一句肯定親情的話，是最好的句點。"
-            },
-            {
-              tag: "追問認同型",
-              text: "「爸，那你真的能接受嗎？你怎麼都不說一句祝福的話？」",
-              delta: -12,
-              reply: "「我都要消化一下啊，你急什麼。」",
-              coach: "父親通常需要安靜的時間重新整理認知，不逼迫當下表態能為未來的和解留下最大空間。"
-            },
-            {
-              tag: "默默離開",
-              text: "「好，晚安。」",
-              delta: +5,
-              reply: "「晚安。」",
-              coach: "和平收尾很不錯，若能補上一句對爸爸的感謝會更有暖度。"
-            }
-          ]
-        }
-      ]
-    },
-    friend: {
-      avatar: "🧑‍🤝‍🧑",
-      name: "摯友（驚訝但很在乎你）",
-      startTemp: 62,
-      turns: [
-        {
-          partnerLine: "「天啊⋯⋯我老實說有點驚訝，我們認識這麼久，怎麼現在才跟我說？是不是怕我不能接受？」",
-          choices: [
-            {
-              tag: "信任邀請框架",
-              text: "「不是不信任你啦！是因為我自己也花了很久才準備好，而你是我最想第一批分享真實生活的人。」",
-              delta: +20,
-              reply: "「聽你這樣說我就放心了！謝謝你願意告訴我，老實說我真的很感動。」",
-              coach: "朋友的失落往往來自「怕自己不夠值得信任」。把焦點轉成「你是我最想分享的人」，瞬間增進友誼！"
-            },
-            {
-              tag: "過度道歉型",
-              text: "「對不起啦，我怕你覺得我很怪、不想跟我當朋友了⋯⋯」",
-              delta: +4,
-              reply: "「哎唷幹嘛說對不起啦！我們這麼多年朋友，你這樣講我會難過耶。」",
-              coach: "不用為自己的性傾向道歉。適度展現自信與對友誼的信任，能讓朋友更自在地面對你。"
-            },
-            {
-              tag: "冷淡防備型",
-              text: "「就覺得沒什麼好講的啊。」",
-              delta: -10,
-              reply: "「喔⋯⋯好吧，那如果不想聊沒關係。」",
-              coach: "過度防備容易讓真心想支持你的朋友感到被推開。"
-            }
-          ]
-        },
-        {
-          partnerLine: "「那⋯⋯我以後跟你相處有什麼要注意的嗎？還是你有對象了嗎？」",
-          choices: [
-            {
-              tag: "日常輕鬆框架",
-              text: "「完全不用特別小心，我還是原本那個愛喝珍奶、愛吐槽你的我！倒是以後可以跟你分享戀愛煩惱了哈哈。」",
-              delta: +18,
-              reply: "「哈哈哈好喔！那太好了，快點跟我說最近有沒有喜歡誰！」",
-              coach: "告訴朋友「我還是原本的我」，能最快消除對方不知所措的緊張感。"
-            },
-            {
-              tag: "設定界線清晰",
-              text: "「謝謝你這麼貼心！目前還請幫我保密喔，因為我還沒跟家裡說。」",
-              delta: +15,
-              reply: "「沒問題，絕對幫你守口如瓶，你需要幫忙隨時說！」",
-              coach: "在剛向朋友出櫃時，清楚告知「隱私界線（誰知道、誰還不知道）」是非常重要且健康的自我保護！"
-            },
-            {
-              tag: "過度嚴肅",
-              text: "「這件事很複雜，三言兩語講不完。」",
-              delta: -5,
-              reply: "「喔⋯⋯好，等你準備好再聊。」",
-              coach: "朋友主動詢問往往代表接納意願高，適度給一個輕鬆的入口可以讓氣氛更自然。"
-            }
-          ]
-        },
-        {
-          partnerLine: "「真開心你告訴我！那接下來對家人出櫃你有什麼打算嗎？需要我陪你嗎？」",
-          choices: [
-            {
-              tag: "邀請成為防護網",
-              text: "「太需要了！我正想把你設定成『安全退路聯絡人』，等我之後跟爸媽說完，第一個打給你！」",
-              delta: +15,
-              reply: "「一句話！隨時打給我，那天我手機一定開最大聲！」",
-              coach: "成功把摯友轉化為實質的「心理支持網」，對未來向家人出櫃是極強大的後盾！"
-            },
-            {
-              tag: "獨自承擔型",
-              text: "「不用啦，這是我自己的事，我自己扛就好。」",
-              delta: +2,
-              reply: "「雖然你很獨立，但有需要還是要揪我喔。」",
-              coach: "允許自己接受善意與陪伴，也是出櫃路上重要的練習。"
-            },
-            {
-              tag: "借用工具分享",
-              text: "「其實我最近有用一個工具先記錄家人平常對議題的態度，到時候再跟你討論怎麼切入！」",
-              delta: +12,
-              reply: "「聽起來很讚耶，需要的時候隨時找我演練！」",
-              coach: "讓朋友了解你的準備步驟，能讓支持變得更具體有效。"
-            }
-          ]
-        }
-      ]
-    }
-  };
-
-  function initSimulator() {
-    document.querySelectorAll("#scenario-selector .scenario-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#scenario-selector .scenario-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        simState.scenarioKey = btn.dataset.scenario;
-        resetSimulator();
-      });
-    });
-
-    document.getElementById("sim-restart-btn").addEventListener("click", resetSimulator);
-
-    document.getElementById("sim-custom-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const input = document.getElementById("sim-custom-input");
-      const text = input.value.trim();
-      if (!text || simState.finished) return;
-      input.value = "";
-      handleCustomSimReply(text);
-    });
-
-    resetSimulator();
-  }
-
-  function resetSimulator() {
-    const sc = SCENARIOS[simState.scenarioKey];
-    simState.turnIndex = 0;
-    simState.temp = sc.startTemp;
-    simState.finished = false;
-
-    document.getElementById("sim-avatar").textContent = sc.avatar;
-    document.getElementById("sim-partner-name").textContent = sc.name;
-    document.getElementById("sim-chat-log").innerHTML = "";
-    document.getElementById("sim-choices-area").classList.remove("hidden");
-    document.getElementById("sim-finish-banner").classList.add("hidden");
-    document.getElementById("coach-feedback-body").innerHTML =
-      `<p class="coach-placeholder">請在左側選擇一個回應選項（或自行輸入句子），我會即時分析這句話啟動了什麼「框架效應」，以及如何降低對方防衛。</p>`;
-
-    appendChatBubble("partner", sc.name.split("（")[0], sc.turns[0].partnerLine);
-    renderSimTurn();
-  }
-
-  function renderSimTurn() {
-    const sc = SCENARIOS[simState.scenarioKey];
-    document.getElementById("sim-turn-indicator").textContent = `第 ${Math.min(simState.turnIndex + 1, sc.turns.length)} / ${sc.turns.length} 回合`;
-    updateTempUI();
-
-    if (simState.turnIndex >= sc.turns.length) {
-      simState.finished = true;
-      document.getElementById("sim-choices-area").classList.add("hidden");
-      document.getElementById("sim-finish-banner").classList.remove("hidden");
-      document.getElementById("sim-finish-summary").textContent =
-        simState.temp >= 70
-          ? `最終理解與安心度達到 ${simState.temp}°C！你成功用「同理＋框架轉譯」降低了對方防衛，為彼此保留了很好的未來對話空間。`
-          : `最終理解與安心度為 ${simState.temp}°C。剛開始面對質疑容易緊繃是很正常的，建議多試試「先接住對方的善意，再給留白時間」的回應方式！`;
-      return;
-    }
-
-    const turn = sc.turns[simState.turnIndex];
-    const choicesList = document.getElementById("sim-choices-list");
-    choicesList.innerHTML = turn.choices
-      .map(
-        (c, idx) => `
-      <button type="button" class="sim-choice-btn" data-idx="${idx}">
-        <span class="choice-tag">${escapeHtml(c.tag)}</span>
-        <div>${escapeHtml(c.text)}</div>
-      </button>
-    `
-      )
+    const allBadges = ["初入城市守護者", "首次匿名守護者", "應變演練達人", "暖心旁觀守護者", "城市環境推動者"];
+    document.getElementById("me-badges-grid").innerHTML = allBadges
+      .map((b) => {
+        const has = state.badges.includes(b);
+        return `<div class="ach-badge ${has ? "unlocked" : ""}">${has ? "🏅" : "🔒"} ${escapeHtml(b)}</div>`;
+      })
       .join("");
 
-    choicesList.querySelectorAll(".sim-choice-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const choice = turn.choices[Number(btn.dataset.idx)];
-        applySimStep(choice.text, choice.delta, choice.reply, choice.coach, choice.tag);
-      });
-    });
-  }
-
-  function handleCustomSimReply(text) {
-    // 簡易 NVC & Framing 關鍵字分析
-    const hasEmpathy = /(懂|知道|理解|擔心|在乎|謝謝|辛苦|重要|愛)/.test(text);
-    const hasBuffer = /(時間|慢慢|不急|休息|資料|之後)/.test(text);
-    const hasAttack = /(煩|不要管|不懂|閉嘴|隨便|干你)/.test(text);
-
-    let delta = 8;
-    let tag = "自訂回應練習";
-    let reply = "「嗯⋯⋯我聽到了，雖然還是需要一點時間想一想，但我知道你是認真的。」";
-    let coach = "你勇敢表達了自己的想法！";
-
-    if (hasAttack) {
-      delta = -14;
-      reply = "「你這樣講話讓我很難繼續跟你溝通下去⋯⋯」";
-      coach = "偵測到較強硬的情緒字眼，對方可能會把注意力轉向「你的態度」而忽略你真實的脆弱與愛。試著加入「我知道你擔心我」做緩衝！";
-    } else if (hasEmpathy && hasBuffer) {
-      delta = +20;
-      reply = "「謝謝你願意這樣顧慮我的感受⋯⋯給我一點時間消化，我們依然是一家人。」";
-      coach = "太棒了！這句自訂回應同時結合了「同理接住對方（非暴力溝通）」與「緩衝留白框架」，能極大程度化解門把效應帶來的焦慮！";
-    } else if (hasEmpathy) {
-      delta = +14;
-      reply = "「我確實是很擔心你啦⋯⋯既然你這麼認真想過，我再聽你說說看。」";
-      coach = "很溫暖的開頭！你先肯定了對方的善意與在乎，這能有效軟化對方的防衛立場。";
-    } else if (hasBuffer) {
-      delta = +12;
-      reply = "「好，謝謝你沒有逼我立刻回答，我晚上慢慢想一想。」";
-      coach = "你保留了對話的空間與時間緩衝，這能大幅避免雙方在情緒高點互傷。";
+    const list = document.getElementById("me-reports-list");
+    if (!state.userReports.length) {
+      list.innerHTML = `<p style="font-size:13px;color:#544e70;">尚未提交任何回報，回到「首頁」區塊 ② 即可一鍵匿名分享安全資訊！</p>`;
+    } else {
+      list.innerHTML = state.userReports
+        .map(
+          (r) => `
+        <div class="loc-card">
+          <div class="loc-card-top">
+            <span>${escapeHtml(r.category)}・${escapeHtml(r.zone)}</span>
+            <span>${escapeHtml(r.date)}</span>
+          </div>
+          <p>${escapeHtml(r.note)}</p>
+        </div>
+      `
+        )
+        .join("");
     }
-
-    applySimStep(text, delta, reply, coach, tag);
   }
 
-  function applySimStep(userText, delta, partnerReply, coachMsg, tag) {
-    const sc = SCENARIOS[simState.scenarioKey];
-    const shortName = sc.name.split("（")[0];
-
-    appendChatBubble("user", "我", userText);
-    simState.temp = Math.max(10, Math.min(100, simState.temp + delta));
-    updateTempUI();
-
-    appendChatBubble("partner", shortName, partnerReply);
-
-    const deltaSign = delta >= 0 ? `+${delta}°C` : `${delta}°C`;
-    const deltaClass = delta >= 0 ? "pos" : "neg";
-    document.getElementById("coach-feedback-body").innerHTML = `
-      <span class="coach-delta ${deltaClass}">策略：${escapeHtml(tag)}（對方安心度 ${deltaSign}）</span>
-      <p>${escapeHtml(coachMsg)}</p>
-    `;
-
-    simState.turnIndex += 1;
-    if (simState.turnIndex < sc.turns.length) {
-      const nextLine = sc.turns[simState.turnIndex].partnerLine;
-      setTimeout(() => {
-        appendChatBubble("partner", shortName, nextLine);
-      }, 220);
-    }
-    renderSimTurn();
-  }
-
-  function appendChatBubble(role, sender, text) {
-    const chatLog = document.getElementById("sim-chat-log");
-    const div = document.createElement("div");
-    div.className = `chat-bubble ${role}`;
-    div.innerHTML = `<span class="chat-sender">${escapeHtml(sender)}</span>${escapeHtml(text)}`;
-    chatLog.appendChild(div);
-    chatLog.scrollTop = chatLog.scrollHeight;
-  }
-
-  function updateTempUI() {
-    document.getElementById("sim-temp-fill").style.width = `${simState.temp}%`;
-    document.getElementById("sim-temp-val").textContent = `${simState.temp}°C`;
-  }
-
-  /* ================= 分頁 4：親友轉譯包 ================= */
-  function initFamilyPack() {
-    const root = document.getElementById("family-pack-root");
-    const fontBtn = document.getElementById("toggle-elder-font-btn");
-    fontBtn.addEventListener("click", () => {
-      const isLarge = root.classList.toggle("elder-large-font");
-      fontBtn.textContent = isLarge ? "🔍 恢復標準字體" : "🔍 切換長輩友善大字";
-      showToast(isLarge ? "已切換為長輩友善大字模式" : "已恢復標準字體");
-    });
-
-    document.getElementById("copy-family-guide-btn").addEventListener("click", () => {
-      const plainGuide = `【給親愛的家人：當孩子向您出櫃時】
-
-如果您的孩子鼓起勇氣告訴您這件事，請先知道：他/她不是想推開您，恰恰相反，是因為您在他生命裡非常重要，他不想一輩子對最愛的人戴著面具。
-
-💛 可以先試著這麼做（三要）：
-1. 先給一句安穩的話：「謝謝你願意告訴我，我需要一點時間想一想，但我還是很愛你。」
-2. 照顧自己的情緒：可以撥打台灣同志諮詢熱線「同志父母諮詢專線 (02) 2392-1970」（週二 18:00-21:00、週四 14:00-17:00），由同樣身為同志父母的志工親自接聽。
-3. 看見眼前的孩子：出櫃前後，他依然是那個愛您、努力生活的孩子。
-
-🌿 請盡量先避免的反應（三不）：
-1. 不要急著自責（這不是誰沒教好）。
-2. 不要說「只是還沒遇到對的人」。
-3. 不要在情緒上頭時說重話，先給彼此一點沉澱的時間。`;
-
-      copyText(plainGuide, "已複製「長輩閱讀版轉譯包」，可直接貼給 Line 家人");
-    });
-  }
-
-  /* ================= 分頁 5：安心防護網 ================= */
-  function initSafetyPlan() {
-    const checklist = document.getElementById("safety-checklist");
-    const checkboxes = checklist.querySelectorAll('input[type="checkbox"]');
-    const textInputs = checklist.querySelectorAll(".si-input");
-
-    checkboxes.forEach((cb) => {
-      cb.checked = Boolean(state.safety[cb.dataset.key]);
-      cb.addEventListener("change", () => {
-        state.safety[cb.dataset.key] = cb.checked;
-        saveState();
-        updateSafetyBadge();
-      });
-    });
-
-    textInputs.forEach((inp) => {
-      inp.value = state.safety[inp.dataset.field] || "";
-      inp.addEventListener("input", () => {
-        state.safety[inp.dataset.field] = inp.value;
-        saveState();
-      });
-    });
-
-    updateSafetyBadge();
-  }
-
-  function updateSafetyBadge() {
-    const keys = ["checkContact", "checkPause", "checkPlace", "checkSelfcare"];
-    const done = keys.filter((k) => state.safety[k]).length;
-    document.getElementById("safety-progress-badge").textContent = `已完成 ${done}/4`;
-  }
-
-  /* ================= 啟動 ================= */
+  /* ================= 初始化 ================= */
   document.addEventListener("DOMContentLoaded", () => {
-    initTopControls();
-    initReadinessAndLogs();
-    initTranslator();
+    initHud();
+    initHomeMap();
+    initReportModule();
     initSimulator();
-    initFamilyPack();
-    initSafetyPlan();
+    initBystander();
+    initAnalytics();
+    initFullMap();
+    renderMeView();
   });
 })();
