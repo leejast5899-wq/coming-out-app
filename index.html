@@ -3,13 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1d1936" />
   <title>SafePride 驕傲同行 — 擁抱多元 × 共同守護</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- 離線狀態提示列 -->
+  <div id="offline-banner" class="offline-banner hidden" role="status">
+    📡 目前為離線狀態：緊急撥號、5D 旁觀者指南、假來電與上次載入之安全地圖仍可正常使用。
+  </div>
+
   <!-- 背景裝飾層：積木彩虹與城市剪影 -->
   <div class="city-sky-backdrop" aria-hidden="true">
     <svg class="voxel-rainbow-arch" viewBox="0 0 420 260" fill="none">
@@ -102,13 +112,14 @@
             </svg>
           </div>
         </div>
+        <div id="sync-mode-badge" class="sync-mode-badge">💾 本地運作模式</div>
       </div>
 
       <!-- 右側：標語橫幅與 首頁 / 地圖 / 我的 遊戲頁籤 -->
       <div class="hud-right">
         <div class="slogan-banner">
           <strong>擁抱多元 × 共同守護</strong>
-          <span>打造更安全、友善的公共空間</span>
+          <span>文化大學周邊 × 真實安全地圖</span>
         </div>
         <div class="hud-nav-row">
           <nav class="game-tabs" role="tablist" aria-label="主功能分頁">
@@ -116,8 +127,11 @@
             <button type="button" class="game-tab" data-view="map" role="tab" aria-selected="false">地圖</button>
             <button type="button" class="game-tab" data-view="me" role="tab" aria-selected="false">我的</button>
           </nav>
-          <button type="button" id="quick-sos-btn" class="hud-alert-card" title="緊急求助與安全資源">
+          <button type="button" id="quick-sos-btn" class="hud-alert-card" title="緊急求助工具箱（直撥／分享位置／假來電）">
             <span class="alert-tri">▲</span>
+          </button>
+          <button type="button" id="quick-exit-btn" class="quick-exit-btn" title="快速偽裝跳離（或連按兩下 Esc）">
+            👁️ 偽裝
           </button>
         </div>
       </div>
@@ -129,17 +143,23 @@
     <!-- ==================== 視圖 1：首頁（海報五大模組 Bento 互動版） ==================== -->
     <section id="view-home" class="view-section active">
       <div class="bento-grid">
-        <!-- 區塊 ①：友善地圖，掌握環境（含霓虹雷達大螢幕） -->
+        <!-- 區塊 ①：友善地圖，掌握環境（含真實 Leaflet 地圖） -->
         <article class="poster-card card-map-main">
           <div class="card-title-row">
             <span class="num-badge c1">1</span>
             <div>
               <h2>友善地圖，掌握環境</h2>
-              <p class="subtitle">查詢在地 LGBTQ+ 友善與安全資訊</p>
+              <p class="subtitle">文化大學・光華路 26 巷・山仔后真實地理安全雷達</p>
             </div>
             <div class="map-toolbar-actions">
+              <button type="button" id="locate-me-btn" class="neon-action-btn secondary">
+                📍 定位
+              </button>
               <button type="button" id="toggle-safe-route-btn" class="neon-action-btn">
-                🛡️ 規劃安全返家路線
+                🛡️ 規劃安全路線
+              </button>
+              <button type="button" id="pick-on-map-btn" class="neon-action-btn secondary">
+                📌 地圖選點
               </button>
             </div>
           </div>
@@ -154,97 +174,52 @@
                 <div class="radar-blip b1"></div>
                 <div class="radar-blip b2"></div>
                 <div class="radar-blip b3"></div>
-                <span class="radar-tag">LIVE RADAR</span>
+                <span class="radar-tag">LIVE MAP</span>
               </div>
 
               <div class="map-filter-group" id="home-map-filters">
                 <button type="button" class="map-filter-btn active" data-filter="all">全部熱點</button>
                 <button type="button" class="map-filter-btn" data-filter="friendly">❤️ 友善空間</button>
-                <button type="button" class="map-filter-btn" data-filter="warning">⚠️ 安全疑慮</button>
+                <button type="button" class="map-filter-btn" data-filter="warning">⚠️ 安全提醒</button>
               </div>
 
               <div class="pin-inspector" id="pin-inspector">
-                <div class="pi-kicker">點擊右側地圖標記查看詳情</div>
-                <strong id="pi-title">虹光友善咖啡廳</strong>
-                <p id="pi-desc">夜間營業至 24:00，店內設有性別友善廁所與安心等候區，照明充足。</p>
-                <div class="pi-meta">
+                <div class="pi-top-row">
+                  <span class="pi-kicker" id="pi-distance">距離計算中…</span>
                   <span id="pi-badge" class="pi-badge friendly">❤️ 友善認證</span>
-                  <button type="button" id="verify-pin-btn" class="pi-verify-btn">👍 確認有效 (+10⭐)</button>
+                </div>
+                <strong id="pi-title">文化大學學生諮商中心</strong>
+                <p id="pi-desc">載入中…</p>
+                <div class="pi-actions">
+                  <a id="pi-nav-link" class="pi-nav-btn" href="#" target="_blank" rel="noopener noreferrer">🚶 導航</a>
+                  <button type="button" id="verify-pin-btn" class="pi-verify-btn">👍 確認 (+10⭐)</button>
+                  <button type="button" id="flag-pin-btn" class="pi-flag-btn" title="檢舉不實或惡意資訊">🚩</button>
                 </div>
               </div>
             </div>
 
-            <!-- 右側 SVG 街區互動地圖 -->
+            <!-- 右側真實 Leaflet 互動地圖 -->
             <div class="tablet-map-canvas">
-              <svg id="home-city-map-svg" viewBox="0 0 520 330" class="city-map-svg" role="img" aria-label="互動式街區友善安全地圖">
-                <defs>
-                  <linearGradient id="mapBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#11385c" />
-                    <stop offset="100%" stop-color="#0b223d" />
-                  </linearGradient>
-                  <filter id="glowCyan">
-                    <feGaussianBlur stdDeviation="2.5" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <rect width="520" height="330" rx="14" fill="url(#mapBg)" />
-
-                <!-- 街區底塊 -->
-                <rect x="24" y="24" width="110" height="72" rx="8" fill="#184a75" stroke="#2f7ab5" />
-                <rect x="158" y="24" width="142" height="72" rx="8" fill="#184a75" stroke="#2f7ab5" />
-                <rect x="324" y="24" width="170" height="72" rx="8" fill="#1a525e" stroke="#36a39d" />
-                <rect x="24" y="122" width="110" height="90" rx="8" fill="#184a75" stroke="#2f7ab5" />
-                <rect x="158" y="122" width="142" height="90" rx="8" fill="#1e5585" stroke="#459ee0" />
-                <rect x="324" y="122" width="170" height="90" rx="8" fill="#184a75" stroke="#2f7ab5" />
-                <rect x="24" y="236" width="110" height="70" rx="8" fill="#1a525e" stroke="#36a39d" />
-                <rect x="158" y="236" width="142" height="70" rx="8" fill="#184a75" stroke="#2f7ab5" />
-                <rect x="324" y="236" width="170" height="70" rx="8" fill="#184a75" stroke="#2f7ab5" />
-
-                <!-- 發光道路網 -->
-                <g stroke="#52d1ff" stroke-width="5" stroke-opacity="0.48" stroke-linecap="round">
-                  <line x1="146" y1="12" x2="146" y2="318" />
-                  <line x1="312" y1="12" x2="312" y2="318" />
-                  <line x1="12" y1="109" x2="508" y2="109" />
-                  <line x1="12" y1="224" x2="508" y2="224" />
-                </g>
-
-                <!-- 路名標籤 -->
-                <text x="154" y="103" fill="#8adfff" font-size="10" font-weight="700">彩虹大道一段</text>
-                <text x="320" y="218" fill="#8adfff" font-size="10" font-weight="700">共融公園路</text>
-
-                <!-- 安全返家路線（預設隱藏，點擊規劃時高亮） -->
-                <path id="safe-route-path" class="safe-route-path hidden"
-                  d="M 78 272 L 146 272 L 146 224 L 312 224 L 312 109 L 410 109 L 410 62"
-                  fill="none" stroke="#4cffb3" stroke-width="6" stroke-dasharray="10 6" filter="url(#glowCyan)" />
-
-                <!-- 標記容器（由 JS 動態渲染） -->
-                <g id="home-map-pins-layer"></g>
-              </svg>
+              <div id="home-leaflet-map" class="leaflet-map-box" role="region" aria-label="互動式街區友善安全地圖"></div>
               <div class="map-legend-bar">
-                <span>❤️ 友善認證空間</span>
-                <span>⚠️ 安全疑慮／暗巷熱點</span>
-                <span id="route-status-pill" class="route-pill hidden">🟢 已避開風險熱點規劃安全路線</span>
+                <span>❤️ 友善安全點</span>
+                <span>⚠️ 已確認警示</span>
+                <span>❔ 待社群確認 (&lt;3)</span>
+                <span id="route-status-pill" class="route-pill hidden">🟢 安全路線規劃中</span>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 區塊 ②：匿名回報，共享資訊（含傾斜手機「提交」畫面） -->
+        <!-- 區塊 ②：匿名回報，共享資訊（含真實座標選點＋傾斜手機「提交」畫面） -->
         <article class="poster-card card-report">
           <div class="card-title-row">
             <span class="num-badge c2">2</span>
             <div>
               <h2>匿名回報，共享資訊</h2>
+              <p class="subtitle">不蒐集姓名電話，警示點自動模糊 30–50m</p>
             </div>
           </div>
-
-          <ul class="green-check-list">
-            <li>✓ 發現安全疑慮或騷擾？</li>
-            <li>✓ 一鍵匿名回報</li>
-          </ul>
 
           <!-- < 💬 > 類別切換器 -->
           <div class="report-type-switcher">
@@ -257,13 +232,17 @@
           </div>
 
           <div class="report-input-mini">
-            <select id="rep-zone-select" aria-label="選擇回報路段">
-              <option value="捷運站北側暗巷">捷運站北側暗巷</option>
-              <option value="彩虹大道便利商店旁">彩虹大道便利商店旁</option>
-              <option value="共融公園東側人行道">共融公園東側人行道</option>
-              <option value="夜市外圍公車站">夜市外圍公車站</option>
-            </select>
-            <input type="text" id="rep-note-input" placeholder="簡述狀況（例：路燈未亮、遇不友善言語）" />
+            <select id="rep-zone-select" aria-label="選擇回報區域"></select>
+
+            <div class="coord-picker-bar">
+              <span id="rep-coord-status" class="coord-status-text">📍 使用所選區域預設座標</span>
+              <div class="coord-mini-btns">
+                <button type="button" id="rep-use-gps-btn" class="mini-pill-btn">📡 用目前位置</button>
+                <button type="button" id="rep-pick-map-btn" class="mini-pill-btn">🗺️ 點地圖選點</button>
+              </div>
+            </div>
+
+            <input type="text" id="rep-note-input" maxlength="160" placeholder="簡述狀況（勿填電話／車牌，例：路燈未亮）" />
           </div>
 
           <!-- 海報同款彩虹背景傾斜手機框 -->
@@ -271,7 +250,7 @@
             <div class="tilted-phone">
               <div class="phone-screen-alert" id="phone-alert-visual">
                 <div class="alert-triangle-box" id="phone-icon-box">!</div>
-                <span id="phone-mode-hint">匿名加密上傳中</span>
+                <span id="phone-mode-hint">自動模糊 30–50m・保護通報者位置</span>
               </div>
               <button type="button" id="submit-report-btn" class="phone-submit-btn">
                 提交
@@ -288,20 +267,16 @@
                 <span class="num-badge c3">3</span>
                 <div>
                   <h2>情境模擬，提升應變</h2>
-                  <p class="subtitle">學習如何應對言語騷擾或不友善對待</p>
+                  <p class="subtitle">結合文大公車、夜歸街頭與職場情境（每題首練 +10💎）</p>
                 </div>
               </div>
               <ul class="green-check-list compact">
-                <li>✓ 遇言語騷擾、不友善對待⋯⋯</li>
-                <li>✓ 互動選擇 ＋ 專業指引</li>
+                <li>✓ 遇言語騷擾、跟蹤或不友善對待⋯⋯</li>
+                <li>✓ 互動選擇 ＋ 在地安全指引</li>
               </ul>
             </div>
 
-            <div class="sim-scenario-pills" id="sim-scenario-pills">
-              <button type="button" class="scen-pill active" data-scen="street">🌙 夜間街頭挑釁</button>
-              <button type="button" class="scen-pill" data-scen="transit">🚇 大眾運輸酸言</button>
-              <button type="button" class="scen-pill" data-scen="work">💼 校園／職場刻板玩笑</button>
-            </div>
+            <div class="sim-scenario-pills" id="sim-scenario-pills"></div>
           </div>
 
           <div class="sim-interactive-body">
@@ -334,34 +309,24 @@
               </div>
               <div id="sim-guidance-box" class="sim-guidance-box">
                 <strong>🛡️ 專業安全指引</strong>
-                <p>點選左側任一應對選項，即時檢視專家安全建議並獲得 <b>+10 💎 勇氣寶石</b>！</p>
+                <p>點選左側任一應對選項，即時檢視專家安全建議並獲得勇氣寶石！</p>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 區塊 ④：旁觀者指南，共同守護 -->
+        <!-- 區塊 ④：旁觀者指南，共同守護（升級完整 5D 介入法） -->
         <article class="poster-card card-bystander">
           <div class="card-title-row">
             <span class="num-badge c4">4</span>
             <div>
-              <h2>旁觀者指南，共同守護</h2>
-              <p class="subtitle">學習安全、友善地協助他人，讓社群更溫暖</p>
+              <h2>旁觀者 5D 指南，共同守護</h2>
+              <p class="subtitle">離線亦可使用，安全介入不硬碰硬</p>
             </div>
           </div>
 
-          <ul class="green-check-list compact">
-            <li>✓ 直接介入、分散注意力</li>
-            <li>✓ 陪伴與事後關懷</li>
-          </ul>
-
           <div class="bystander-stage">
-            <div class="bystander-buttons" id="bystander-tabs">
-              <button type="button" class="by-btn active" data-by="distract">🎭 分散注意力</button>
-              <button type="button" class="by-btn" data-by="care">🤝 陪伴與關懷</button>
-              <button type="button" class="by-btn" data-by="delegate">📢 尋求支援</button>
-              <button type="button" class="by-btn" data-by="direct">🛡️ 安全制止</button>
-            </div>
+            <div class="bystander-buttons" id="bystander-tabs"></div>
 
             <div class="bystander-dialogue-card">
               <div class="bubble-row">
@@ -379,25 +344,19 @@
             <span class="num-badge c5">5</span>
             <div>
               <h2>數據分析，推動改變</h2>
-              <p class="subtitle">彙整數據，呈現安全狀況，推動環境改善</p>
+              <p class="subtitle">依目前真實標記統計，支援 1999 市政報修</p>
             </div>
           </div>
-
-          <ul class="green-check-list compact">
-            <li>✓ 友善與不安全熱點地圖</li>
-            <li>✓ 數據統計與趨勢追蹤</li>
-            <li>✓ 推動友善環境改善</li>
-          </ul>
 
           <div class="analytics-widget">
             <div class="analytics-kpis">
               <div class="kpi-chip">
                 <span>友善空間</span>
-                <strong id="kpi-friendly-count">4</strong>
+                <strong id="kpi-friendly-count">0</strong>
               </div>
               <div class="kpi-chip warn">
-                <span>安全回報</span>
-                <strong id="kpi-warning-count">3</strong>
+                <span>警示＋待確認</span>
+                <strong id="kpi-warning-count">0</strong>
               </div>
               <div class="kpi-chip boost">
                 <span>改善連署</span>
@@ -406,12 +365,17 @@
             </div>
 
             <div class="rainbow-chart-box">
-              <svg id="analytics-chart-svg" viewBox="0 0 280 96" width="100%" height="96" role="img" aria-label="安全趨勢彩虹長條與折線圖"></svg>
+              <svg id="analytics-chart-svg" viewBox="0 0 280 96" width="100%" height="96" role="img" aria-label="各分類安全標記即時統計長條圖"></svg>
             </div>
 
-            <button type="button" id="petition-btn" class="petition-cta-btn">
-              🔥 支持連署：增設暗巷照明與友善認證 (+15⭐)
-            </button>
+            <div class="analytics-cta-stack">
+              <button type="button" id="petition-btn" class="petition-cta-btn">
+                🔥 支持連署：增設文大周邊暗巷照明 (+15⭐)
+              </button>
+              <button type="button" id="copy-1999-btn" class="secondary-cta-btn">
+                📋 複製 1999 市政照明／安全報修範本
+              </button>
+            </div>
           </div>
         </article>
       </div>
@@ -423,17 +387,23 @@
         <div class="full-panel-head">
           <div>
             <span class="section-badge-dark">SafePride Tactical Map</span>
-            <h2>全區 LGBTQ+ 友善空間與風險熱點探索</h2>
+            <h2>文化大學周邊與台北友善空間探索</h2>
           </div>
           <div class="map-search-controls">
-            <input type="text" id="map-search-input" placeholder="搜尋地點名稱或安全關鍵字⋯" />
+            <div class="full-filter-pills" id="full-map-filters">
+              <button type="button" class="mini-filter-btn active" data-filter="all">全部</button>
+              <button type="button" class="mini-filter-btn" data-filter="friendly">❤️ 友善</button>
+              <button type="button" class="mini-filter-btn" data-filter="warning">⚠️ 提醒</button>
+            </div>
+            <input type="text" id="map-search-input" placeholder="搜尋地點名稱、格致路、24H⋯" />
+            <button type="button" id="full-locate-btn" class="neon-action-btn secondary">📍 定位</button>
             <button type="button" id="map-view-route-btn" class="neon-action-btn">🛡️ 切換安全路線</button>
           </div>
         </div>
 
         <div class="full-map-layout">
           <div class="full-map-svg-wrap">
-            <svg id="full-city-map-svg" viewBox="0 0 640 380" class="city-map-svg"></svg>
+            <div id="full-leaflet-map" class="leaflet-map-box full"></div>
           </div>
           <div class="full-map-list-col">
             <h3>📍 地標與安全回報清單 (<span id="map-list-count">0</span>)</h3>
@@ -443,7 +413,7 @@
       </div>
     </section>
 
-    <!-- ==================== 視圖 3：我的（守護者護照、成就與求助資源） ==================== -->
+    <!-- ==================== 視圖 3：我的（守護者護照、成就與真 SOS 求助工具） ==================== -->
     <section id="view-me" class="view-section">
       <div class="me-grid">
         <div class="full-panel-card">
@@ -453,13 +423,21 @@
             <div class="passport-avatar-big" id="passport-avatar-display">👑</div>
             <div>
               <h3 id="passport-rank-title">彩虹城市守護領航員</h3>
-              <p>透過匿名回報、模擬演練與旁觀者行動，你正在讓這座城市更安全。</p>
+              <p>透過匿名回報、模擬演練與旁觀者行動，你正在讓校園與城市更安全。</p>
               <div class="passport-stats-row">
                 <span>⭐ 守護幣：<strong id="me-coins">200</strong></span>
                 <span>💎 勇氣寶石：<strong id="me-gems">40</strong></span>
                 <span>📌 我的回報：<strong id="me-report-count">0</strong> 筆</span>
               </div>
             </div>
+          </div>
+
+          <div class="sync-status-card" id="me-sync-status-card">
+            <div>
+              <strong id="me-sync-title">目前模式：本地展示模式</strong>
+              <p id="me-sync-desc">填入 js/config.js 中的 Supabase URL 與公開 anon key 後，即可跨裝置同步全體使用者回報。</p>
+            </div>
+            <a href="./admin.html" class="mini-admin-link">🔐 管理員審核頁</a>
           </div>
 
           <h4 class="me-sub-h">🏅 守護成就徽章</h4>
@@ -470,42 +448,46 @@
         </div>
 
         <div class="full-panel-card">
-          <span class="section-badge-dark">Emergency & Taiwan Support</span>
-          <h2>緊急求助與台灣多元支持資源</h2>
-          <p class="card-intro">若當下遭遇跟蹤、暴力威脅或極度不安全狀況，請立即前往超商、捷運站務室等明亮公共空間並撥打以下專線：</p>
+          <span class="section-badge-dark">Emergency &amp; Taiwan Support</span>
+          <h2>真・緊急求助工具與台灣多元支持</h2>
+          <p class="card-intro">以下所有專線支援手機一鍵直撥；脫身工具與專線在離線環境下亦可開啟。</p>
 
-          <div class="sos-cards-list">
-            <div class="sos-card urgent">
-              <strong>🚨 緊急人身安全：110（報警）／ 113（24H 保護專線）</strong>
-              <p>遭遇跟蹤、肢體威脅或無法脫身時，優先確保自身進入有監視器與店員的明亮場所並立即撥打。</p>
+          <!-- SOS 實戰快捷工具列 -->
+          <div class="sos-toolbox-panel">
+            <div class="sos-action-row">
+              <button type="button" id="me-share-location-btn" class="sos-tool-btn primary">📍 一鍵分享即時位置</button>
+              <button type="button" id="me-nearest-safe-btn" class="sos-tool-btn">🏪 導航最近安全點</button>
             </div>
-            <div class="sos-card">
-              <strong>🌈 台灣同志諮詢熱線協會：(02) 2392-1969（台北）／ (07) 281-1265（高雄）</strong>
-              <p>提供多元性別諮詢、不友善對待心理支持與相關轉介資源（週一至週五 14:00–22:00）。</p>
+            <div class="fake-call-launcher">
+              <select id="fake-caller-select" aria-label="選擇假來電顯示名稱">
+                <option value="室友小安">室友小安</option>
+                <option value="家人">家人</option>
+                <option value="學姐">學姐</option>
+              </select>
+              <button type="button" id="me-fake-call-btn" class="sos-tool-btn">📞 5 秒假來電脫身</button>
             </div>
-            <div class="sos-card">
-              <strong>💚 心理支持與安心專線：1925（衛福部 24H 免費）／ 1980（張老師）</strong>
-              <p>經歷言語騷擾或環境壓力後若感到焦慮不安，讓專業輔導人員陪伴你穩定情緒。</p>
-            </div>
-            <div class="sos-card">
-              <strong>⚖️ 法律諮詢與權益申訴：台灣伴侶權益推動聯盟（TAPCPR）</strong>
-              <p>遭遇職場、校園性別歧視或不當對待，可尋求性別平等教育法、性別平等工作法申訴諮詢。</p>
+            <div class="emergency-contact-form">
+              <input type="text" id="ec-name-input" maxlength="24" placeholder="緊急聯絡人稱呼（僅存本機）" />
+              <input type="tel" id="ec-phone-input" maxlength="20" placeholder="聯絡人電話（如 0912345678）" />
+              <button type="button" id="ec-save-btn" class="mini-save-btn">儲存</button>
             </div>
           </div>
+
+          <div id="me-sos-cards-list" class="sos-cards-list"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- 底部價值宣言與金色下載 CTA 列（100% 對應海報最下方） -->
+  <!-- 底部價值宣言與金色下載 CTA 列 -->
   <footer class="poster-footer">
     <div class="footer-inner">
       <div class="footer-pillars">
         <div class="pillar-badge">
           <span class="pb-ico">🛡️</span>
           <div>
-            <strong>匿名回報</strong>
-            <small>守護隱私</small>
+            <strong>匿名模糊</strong>
+            <small>保護隱私</small>
           </div>
         </div>
         <div class="pillar-badge">
@@ -518,19 +500,19 @@
         <div class="pillar-badge">
           <span class="pb-ico">📊</span>
           <div>
-            <strong>數據支持</strong>
+            <strong>真實數據</strong>
             <small>推動改變</small>
           </div>
         </div>
       </div>
 
       <div class="footer-slogan">
-        更安全、友善的城市，<br class="mobile-br" />從你我開始 ♡
+        更安全、友善的校園與城市，<br class="mobile-br" />從你我開始 ♡
       </div>
 
       <button type="button" id="cta-download-btn" class="gold-cta-btn">
         <span class="cta-main">立即下載</span>
-        <span class="cta-sub">一起守護公共安全 &gt;</span>
+        <span class="cta-sub">安裝到手機離線使用 &gt;</span>
       </button>
     </div>
   </footer>
@@ -546,9 +528,31 @@
     </div>
   </div>
 
+  <!-- 假來電全螢幕脫身畫面 -->
+  <div id="fake-call-overlay" class="fake-call-overlay hidden" role="dialog" aria-modal="true" aria-label="模擬來電畫面">
+    <div class="fc-inner">
+      <div class="fc-top">
+        <span class="fc-badge">SafePride 脫身掩護模式</span>
+        <div class="fc-avatar">📱</div>
+        <h2 id="fc-caller-name">室友小安</h2>
+        <p id="fc-status-text">行動電話來電中…</p>
+      </div>
+      <div id="fc-script-hint" class="fc-script-hint hidden">
+        💬 自然脫身台詞參考：<br />
+        「喂～你已經到格致路 7-11 門口了喔？好，那我現在馬上走過去找你，掰掰！」
+      </div>
+      <div class="fc-actions">
+        <button type="button" id="fc-hangup-btn" class="fc-btn hangup">✕ 掛斷</button>
+        <button type="button" id="fc-answer-btn" class="fc-btn answer">📞 接聽</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 浮動 Toast 提示 -->
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  <script src="app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

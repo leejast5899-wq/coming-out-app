@@ -1,0 +1,32 @@
+{
+  "name": "SafePride 驕傲同行 — 擁抱多元 × 共同守護",
+  "short_name": "SafePride",
+  "description": "在地 LGBTQ+ 友善空間探索、匿名安全回報、情境應變練習與緊急求助 PWA 工具。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1d1936",
+  "theme_color": "#1d1936",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafePride 驕傲同行 — 管理員內容審核頁</title>
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --bg: #16132b;
+      --card: #ffffff;
+      --muted: #5a5475;
+      --border: #ddd6f5;
+      --accent: #6c47c2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(160deg, #1d1936 0%, #2d2554 100%);
+      color: #1f1a38;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      color: #ffffff;
+      margin-bottom: 18px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .back-link {
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffe37e;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      margin-bottom: 16px;
+    }
+    .hidden { display: none !important; }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    input, select {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      flex: 1 1 200px;
+    }
+    button {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #ffffff; }
+    .btn-ok { background: #26a96c; color: #ffffff; }
+    .btn-warn { background: #f4a226; color: #1f1a38; }
+    .btn-danger { background: #e63946; color: #ffffff; }
+    .btn-ghost { background: #efebf9; color: #2b234d; }
+    .spot-item {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #faf9ff;
+    }
+    .spot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .badge.active { background: #e6faef; color: #126b42; }
+    .badge.hidden-st { background: #ffe8ec; color: #a61c34; }
+    .badge.resolved { background: #e8f1ff; color: #1b54a8; }
+    .spot-meta {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .msg {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a61c34;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>🔐 SafePride 管理員內容審核頁</h1>
+        <small>僅供授權管理員登入審核被檢舉或異常回報資料</small>
+      </div>
+      <a class="back-link" href="./index.html">← 返回 SafePride 主頁</a>
+    </div>
+
+    <div id="not-configured-card" class="card hidden">
+      <h2>⚠️ 尚未填入 Supabase 雲端設定</h2>
+      <p>目前 <code>js/config.js</code> 中的 <code>supabaseUrl</code> 與 <code>supabaseAnonKey</code> 仍為空值，因此沒有雲端資料庫可審核。</p>
+      <p>請先依照 <code>supabase/SETUP_GUIDE.md</code> 完成免費 Supabase 建置並於後台建立管理員帳號後，再回來登入管理。</p>
+    </div>
+
+    <div id="login-card" class="card hidden">
+      <h2>管理員登入（Supabase Auth）</h2>
+      <p style="color:#5a5475;font-size:13.5px;">請使用你在 Supabase Dashboard → Authentication → Users 建立的管理員 Email 與密碼登入。</p>
+      <div class="form-row">
+        <input type="email" id="admin-email" placeholder="管理員 Email" autocomplete="email" />
+        <input type="password" id="admin-password" placeholder="密碼" autocomplete="current-password" />
+        <button type="button" id="login-btn" class="btn-primary">登入審核後台</button>
+      </div>
+      <div id="login-msg" class="msg"></div>
+    </div>
+
+    <div id="dashboard-card" class="card hidden">
+      <div class="spot-top">
+        <div>
+          <h2 style="margin:0;">📋 標記與回報審核清單</h2>
+          <small id="admin-user-label" style="color:#5a5475;"></small>
+        </div>
+        <div class="actions">
+          <select id="status-filter" style="flex:0 0 auto;">
+            <option value="all">全部狀態</option>
+            <option value="hidden">已隱藏／被檢舉 (hidden)</option>
+            <option value="active">公開顯示中 (active)</option>
+            <option value="resolved">已改善結案 (resolved)</option>
+          </select>
+          <button type="button" id="refresh-btn" class="btn-ghost">🔄 重新整理</button>
+          <button type="button" id="logout-btn" class="btn-danger">登出</button>
+        </div>
+      </div>
+      <div id="admin-msg" class="msg"></div>
+      <div id="spots-list" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { APP_CONFIG } from "./js/config.js";
+
+    const notConfCard = document.getElementById("not-configured-card");
+    const loginCard = document.getElementById("login-card");
+    const dashCard = document.getElementById("dashboard-card");
+    const loginMsg = document.getElementById("login-msg");
+    const adminMsg = document.getElementById("admin-msg");
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    if (!APP_CONFIG.supabaseUrl || !APP_CONFIG.supabaseAnonKey || !window.supabase) {
+      notConfCard.classList.remove("hidden");
+    } else {
+      const client = window.supabase.createClient(
+        APP_CONFIG.supabaseUrl.trim(),
+        APP_CONFIG.supabaseAnonKey.trim()
+      );
+
+      async function loadSpots() {
+        adminMsg.textContent = "";
+        const filter = document.getElementById("status-filter").value;
+        let query = client
+          .from("spots")
+          .select("id,type,category,name,zone,description,lat,lng,confirmations,flags_count,status,created_at")
+          .order("flags_count", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(200);
+
+        if (filter !== "all") query = query.eq("status", filter);
+
+        const { data, error } = await query;
+        if (error) {
+          adminMsg.textContent = "載入失敗：" + error.message;
+          return;
+        }
+
+        const listEl = document.getElementById("spots-list");
+        if (!data || !data.length) {
+          listEl.innerHTML = "<p>目前沒有符合條件的資料。</p>";
+          return;
+        }
+
+        listEl.innerHTML = data.map((s) => {
+          const badgeClass = s.status === "hidden" ? "hidden-st" : s.status;
+          return `
+            <div class="spot-item">
+              <div class="spot-top">
+                <strong>${s.type === "friendly" ? "❤️" : "⚠️"} ${escapeHtml(s.name)}</strong>
+                <span class="badge ${escapeHtml(badgeClass)}">${escapeHtml(s.status)}</span>
+              </div>
+              <div class="spot-meta">
+                區域：${escapeHtml(s.zone)} ｜ 座標：${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)} ｜ 確認：${s.confirmations} ｜ 檢舉：<strong>${s.flags_count}</strong> ｜ 建立：${escapeHtml(String(s.created_at).slice(0, 16))}
+              </div>
+              <p style="margin:0 0 10px;font-size:13.5px;">${escapeHtml(s.description)}</p>
+              <div class="actions">
+                <button type="button" class="btn-ok" data-action="active" data-id="${escapeHtml(s.id)}">✓ 設為公開</button>
+                <button type="button" class="btn-primary" data-action="resolved" data-id="${escapeHtml(s.id)}">🛠️ 標記已改善</button>
+                <button type="button" class="btn-warn" data-action="hidden" data-id="${escapeHtml(s.id)}">🙈 隱藏下架</button>
+                <button type="button" class="btn-danger" data-action="delete" data-id="${escapeHtml(s.id)}">🗑️ 永久刪除</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        listEl.querySelectorAll("button[data-action]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = btn.dataset.id;
+            const action = btn.dataset.action;
+            if (action === "delete") {
+              if (!window.confirm("確定要永久刪除這筆標記嗎？")) return;
+              const { error: delErr } = await client.from("spots").delete().eq("id", id);
+              if (delErr) { adminMsg.textContent = delErr.message; return; }
+            } else {
+              const { error: updErr } = await client.from("spots").update({ status: action }).eq("id", id);
+              if (updErr) { adminMsg.textContent = updErr.message; return; }
+            }
+            loadSpots();
+          });
+        });
+      }
+
+      async function checkSession() {
+        const { data } = await client.auth.getSession();
+        const session = data?.session;
+        if (session?.user) {
+          loginCard.classList.add("hidden");
+          dashCard.classList.remove("hidden");
+          document.getElementById("admin-user-label").textContent = "已登入管理員：" + session.user.email;
+          loadSpots();
+        } else {
+          dashCard.classList.add("hidden");
+          loginCard.classList.remove("hidden");
+        }
+      }
+
+      document.getElementById("login-btn").addEventListener("click", async () => {
+        loginMsg.textContent = "";
+        const email = document.getElementById("admin-email").value.trim();
+        const password = document.getElementById("admin-password").value;
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        if (error) {
+          loginMsg.textContent = "登入失敗：" + error.message;
+          return;
+        }
+        checkSession();
+      });
+
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        await client.auth.signOut();
+        checkSession();
+      });
+
+      document.getElementById("refresh-btn").addEventListener("click", loadSpots);
+      document.getElementById("status-filter").addEventListener("change", loadSpots);
+      checkSession();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#282150" />
+      <stop offset="100%" stop-color="#141029" />
+    </linearGradient>
+    <linearGradient id="shieldRainbow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff4e6a" />
+      <stop offset="25%" stop-color="#ffb830" />
+      <stop offset="50%" stop-color="#3cd070" />
+      <stop offset="75%" stop-color="#38a6ff" />
+      <stop offset="100%" stop-color="#9e5cff" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bgGrad)" />
+  <rect x="20" y="20" width="472" height="472" rx="92" fill="none" stroke="#33ebff" stroke-opacity="0.35" stroke-width="8" />
+  <path d="M256 76 L418 130 V252 C418 352 346 420 256 448 C166 420 94 352 94 252 V130 Z"
+        fill="url(#shieldRainbow)" stroke="#ffffff" stroke-width="18" stroke-linejoin="round" />
+  <circle cx="192" cy="236" r="22" fill="#1e1736" />
+  <circle cx="256" cy="218" r="24" fill="#1e1736" />
+  <circle cx="320" cy="236" r="22" fill="#1e1736" />
+  <path d="M160 356 V278 Q160 264 176 264 H208 Q224 264 224 278 V356 Z" fill="#1e1736" />
+  <path d="M222 364 V262 Q222 246 240 246 H272 Q290 246 290 262 V364 Z" fill="#1e1736" />
+  <path d="M288 356 V278 Q288 264 304 264 H336 Q352 264 352 278 V356 Z" fill="#1e1736" />
+</svg>
